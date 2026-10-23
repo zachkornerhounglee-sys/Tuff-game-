@@ -38,7 +38,7 @@
         });
         setTimeout(() => {
           if (!window.__frontierBooted && document.getElementById('boot-status')) {
-            showStartupError('Game files did not load', "The website is not serving the built game correctly. Redeploy from the project root with build command: npm install && npm run build, and start command: npm start. Check your hosting logs for the original error.");
+            showStartupError('Game files did not load', "GitHub Pages must publish the built website, not the raw source files. In the repository, open Settings → Pages and choose GitHub Actions, then check the latest Actions run for a build or deploy error.");
           }
         }, 10000);
       })();
@@ -50,7 +50,7 @@
       <section id="boot-status" role="status">
         <h1>Frontier Detective</h1>
         <p data-boot-detail>Loading the game…</p>
-        <p class="boot-note">If this message stays here, the page will show a startup error instead of remaining blank.</p>
+        <p class="boot-note">This game is built for GitHub Pages. If loading fails, check the repository's Actions deployment log.</p>
       </section>
     </main>
     <div id="toast-stack" aria-live="assertive"></div>

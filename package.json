@@ -1,24 +1,20 @@
 {
-  "name": "frontier-detective-multiplayer",
-  "version": "1.0.0",
-  "private": true,
+  "name": "frontier-detective-github-pages",
+  "version": "1.1.0",
+  "private": false,
   "type": "module",
-  "description": "A non-graphic first-person multiplayer social-deduction game with real-time rooms and 3D NPCs.",
+  "description": "Frontier Detective browser multiplayer game, deployable to GitHub Pages with PeerJS WebRTC.",
   "scripts": {
-    "dev": "concurrently -k \"node server.js\" \"vite --host 0.0.0.0\"",
+    "dev": "vite --host 0.0.0.0",
     "build": "vite build",
-    "start": "node server.js",
+    "preview": "vite preview --host 0.0.0.0",
     "test": "node --test"
   },
   "dependencies": {
-    "express": "^4.21.2",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
-    "three": "^0.180.0",
-    "dotenv": "^16.4.7"
+    "peerjs": "^1.5.5",
+    "three": "^0.180.0"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2",
     "vite": "^7.1.7"
   },
   "engines": {
