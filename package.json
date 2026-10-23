@@ -1,0 +1,27 @@
+{
+  "name": "frontier-detective-multiplayer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A non-graphic first-person multiplayer social-deduction game with real-time rooms and 3D NPCs.",
+  "scripts": {
+    "dev": "concurrently -k \"node server.js\" \"vite --host 0.0.0.0\"",
+    "build": "vite build",
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "three": "^0.180.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "vite": "^7.1.7"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
