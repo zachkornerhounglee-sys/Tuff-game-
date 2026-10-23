@@ -6,10 +6,53 @@
     <meta name="theme-color" content="#171a1f" />
     <meta name="description" content="Frontier Detective — a first-person online social-deduction game." />
     <title>Frontier Detective</title>
+    <style>
+      html, body { margin: 0; min-height: 100%; background: #171a1f; color: #f4f1e9; font-family: system-ui, sans-serif; }
+      #world { position: fixed; inset: 0; background: linear-gradient(#9abac5, #d2b277); }
+      #ui { position: fixed; inset: 0; z-index: 2; display: grid; place-items: center; box-sizing: border-box; padding: 20px; }
+      #boot-status { width: min(100%, 560px); box-sizing: border-box; padding: 28px; border-radius: 18px; border: 1px solid #735a35; background: rgba(24,27,31,.97); box-shadow: 0 20px 60px #0008; }
+      #boot-status h1 { margin: 0 0 12px; color: #fff0ce; font-size: clamp(24px, 5vw, 36px); }
+      #boot-status p { margin: 8px 0 0; color: #c7c3ba; line-height: 1.55; overflow-wrap: anywhere; }
+      #boot-status .boot-note { margin-top: 18px; font-size: 12px; color: #e5b55c; }
+    </style>
+    <script>
+      (() => {
+        const showStartupError = (title, detail) => {
+          if (window.__frontierBooted) return;
+          const panel = document.getElementById('boot-status');
+          if (!panel) return;
+          const heading = panel.querySelector('h1');
+          const message = panel.querySelector('[data-boot-detail]');
+          if (heading) heading.textContent = title;
+          if (message) message.textContent = String(detail || 'The game files failed to load.');
+        };
+        window.addEventListener('error', event => {
+          if (!window.__frontierBooted && document.getElementById('boot-status')) {
+            showStartupError('The game could not start', event.message || 'A game file failed to load.');
+          }
+        });
+        window.addEventListener('unhandledrejection', event => {
+          if (!window.__frontierBooted && document.getElementById('boot-status')) {
+            showStartupError('The game could not start', event.reason?.message || String(event.reason || 'An unexpected startup error occurred.'));
+          }
+        });
+        setTimeout(() => {
+          if (!window.__frontierBooted && document.getElementById('boot-status')) {
+            showStartupError('Game files did not load', "The website is not serving the built game correctly. Redeploy from the project root with build command: npm install && npm run build, and start command: npm start. Check your hosting logs for the original error.");
+          }
+        }, 10000);
+      })();
+    </script>
   </head>
   <body>
     <div id="world" aria-label="3D game scene"></div>
-    <main id="ui" aria-live="polite"></main>
+    <main id="ui" aria-live="polite">
+      <section id="boot-status" role="status">
+        <h1>Frontier Detective</h1>
+        <p data-boot-detail>Loading the game…</p>
+        <p class="boot-note">If this message stays here, the page will show a startup error instead of remaining blank.</p>
+      </section>
+    </main>
     <div id="toast-stack" aria-live="assertive"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

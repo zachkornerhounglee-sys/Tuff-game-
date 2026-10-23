@@ -115,6 +115,10 @@ npm run build
 
 `npm test` checks shared rule helpers (name cleaning, map validation, role-count bounds, distance math and room code generation). The production build compiles the browser app. These checks do not replace a full multi-device playtest or a hosted network test.
 
+## Blank or white page
+
+The startup HTML now displays a loading panel before the JavaScript app starts. If the app bundle fails to load, the panel shows a startup message instead of leaving a blank page. For the recommended single-service Render deployment, use the repository root as the **Root Directory**, the build command `npm install && npm run build`, and the start command `npm start`. Do not deploy the raw `index.html` as a static site by itself: the game needs the Vite build and the Node/Socket.IO server. After changing files, push the changes to the connected GitHub branch and trigger a new deployment. If the panel reports a script error, inspect the browser developer console and the Render build/runtime logs; the first error in those logs is the useful one.
+
 ## Troubleshooting
 
 - **Room code not found:** codes exist only while the in-memory server room exists. Verify the host is still in the room and copy the current code again.
