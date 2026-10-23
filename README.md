@@ -62,6 +62,10 @@ The frontend build can read:
 
 Never put credentials or secrets into `VITE_*` variables; these are included in browser assets.
 
+## Fast fix for a white page and one friend link
+
+Follow [DEPLOY-ONE-LINK.md](DEPLOY-ONE-LINK.md) first. Use one Render **Web Service**, not a static site. This means friends do not run anything on their own computers; the hosted service keeps the shared multiplayer room.
+
 ## Recommended deployment: GitHub + one Render web service
 
 This is the easiest way to get a single public game URL. Render serves the built frontend and runs the Node/Socket.IO server on the same origin, so no separate frontend URL or CORS configuration is needed.
