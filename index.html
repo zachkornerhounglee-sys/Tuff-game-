@@ -16,10 +16,10 @@ button{cursor:pointer;background:#c0392b;border-color:#e74c3c;font-weight:600}bu
 #cross{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;background:#fffd;box-shadow:0 0 0 2px #0006;border-radius:50%}
 #toast{position:absolute;top:70px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:700;text-shadow:0 2px 6px #000;text-align:center}
 #lock{position:absolute;top:42%;width:100%;text-align:center;font-size:20px;text-shadow:0 2px 8px #000}
-#viewer{position:fixed;inset:0;display:none;pointer-events:none;z-index:4}#viewer>*{pointer-events:auto}#vp{position:absolute;top:12px;left:12px;width:250px;max-height:94vh;overflow:auto;background:#000b;border-radius:10px;padding:10px}#vp button{margin:3px 0;padding:6px 10px;font-size:13px;text-align:left}#vp button.bad{background:#552}#vh{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#0009;padding:8px 14px;border-radius:10px;font-size:13px}.role{font-weight:800;font-size:18px}.sheriff{color:#5aa9ff}.murderer{color:#ff5a5a}.civilian{color:#9fe3a1}
+#viewer{position:fixed;inset:0;display:none;pointer-events:none;z-index:4}#viewer>*{pointer-events:auto}#vp{position:absolute;top:12px;left:12px;width:250px;max-height:94vh;overflow:auto;background:#000b;border-radius:10px;padding:10px}#vp button{margin:3px 0;padding:6px 10px;font-size:13px;text-align:left}#vp button.bad{background:#552}#vh{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#0009;padding:8px 14px;border-radius:10px;font-size:13px}#vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}input[type=range]{padding:0}.role{font-weight:800;font-size:18px}.sheriff{color:#5aa9ff}.murderer{color:#ff5a5a}.civilian{color:#9fe3a1}
 </style></head><body>
 <canvas id="c"></canvas>
-<div id="hud">
+<div id="hud"><div id="vig"></div>
  <div class="p" id="tl"><div class="role" id="role"></div><div id="obj"></div></div>
  <div class="p" id="tr"><div>Civilians left: <b id="civs">0</b></div><div id="conn"></div></div>
  <div id="cross"></div><div id="toast"></div><div id="lock">Click to play · WASD move · Shift run · Click attack</div>
@@ -30,7 +30,7 @@ button{cursor:pointer;background:#c0392b;border-color:#e74c3c;font-weight:600}bu
  <h1>🔪 Hide &amp; Seek Murder Mystery</h1><p class="sub">3D · peer-to-peer multiplayer · no server needed</p>
  <button id="bHost" disabled>Host Game</button>
  <div class="row"><input id="code" placeholder="Room code / invite link"><button class="alt" id="bJoin" disabled>Join</button></div>
- <div class="row"><button class="alt" id="bView" disabled>🧪 Model Viewer</button></div><div class="row"><button class="alt" id="bSbS" disabled>🧪 Sandbox: Sheriff</button><button class="alt" id="bSbM" disabled>🧪 Sandbox: Murderer</button></div><div class="row"><button class="alt" id="bPick">📂 Load models from your computer (.glb)</button></div><div class="row"><button class="alt" id="bClr" style="font-size:12px;padding:6px">Forget saved models</button></div><input type="file" id="fpick" multiple accept=".glb" style="display:none"><div class="err" id="menuErr"></div><pre id="diag" style="color:#ffd27a;font-size:11px;white-space:pre-wrap;word-break:break-all;margin:6px 0 0"></pre><div class="stat" id="load">Loading models…</div>
+ <div class="row"><button class="alt" id="bView" disabled>🧪 Model Viewer</button></div><div class="row"><button class="alt" id="bSbS" disabled>🧪 Sandbox: Sheriff</button><button class="alt" id="bSbM" disabled>🧪 Sandbox: Murderer</button></div><div class="row"><button class="alt" id="bPick">📂 Load models from your computer (.glb)</button></div><div class="row"><button class="alt" id="bClr" style="font-size:12px;padding:6px">Forget saved models</button></div><div class="row"><button class="alt" id="bSet">⚙ Settings (day / night, graphics)</button></div><input type="file" id="fpick" multiple accept=".glb" style="display:none"><div class="err" id="menuErr"></div><pre id="diag" style="color:#ffd27a;font-size:11px;white-space:pre-wrap;word-break:break-all;margin:6px 0 0"></pre><div class="stat" id="load">Loading models…</div>
 </div></div>
 <div class="scr" id="lobby"><div class="card">
  <h2>Lobby</h2><p class="sub">Players connected: <b id="lp">1</b> · AI civilians: <b id="lc">30</b></p>
@@ -40,6 +40,13 @@ button{cursor:pointer;background:#c0392b;border-color:#e74c3c;font-weight:600}bu
 </div></div>
 <div class="scr" id="over"><div class="card"><h1 id="oT"></h1><p class="sub" id="oW"></p><p id="oR"></p><button id="bAgain">Play Again</button></div></div>
 
+<div class="scr" id="pause"><div class="card"><h2 id="pTitle">Settings</h2><p class="sub">The match keeps running for everyone while this is open.</p>
+ <label class="sub">Time of day</label><div class="row"><button class="alt" id="tDay">☀️ Day</button><button class="alt" id="tNight">🌙 Night</button></div>
+ <label class="sub">Mouse sensitivity <b id="sensV"></b></label><input type="range" id="sens" min="0.3" max="2.5" step="0.1">
+ <label class="sub">Field of view <b id="fovV"></b></label><input type="range" id="fovR" min="60" max="110" step="1">
+ <label class="sub">Graphics quality</label><select id="qual"><option value="low">Low (fast)</option><option value="med">Medium</option><option value="high">High</option></select>
+ <label class="sub"><input type="checkbox" id="flashC" style="width:auto;margin-right:8px">Flashlight at night (press F)</label>
+ <button id="bResume">Resume</button><button class="alt" id="bLeave">Leave game</button></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
@@ -57,6 +64,8 @@ const CONFIG={
   },
   textures:{wall:null,floor:null,grass:null,road:null}, // optional image URLs
   viewmodel:{scale:1.6,pos:[.26,-.3,-.5],yaw:Math.PI/2}, // held blaster in first person (tweak if it points the wrong way)
+  net:{tick:20,interp:110},   // network/sim ticks per second, and render delay (ms) used for smooth interpolation
+  spawn:{sheriffWithCrowd:false}, // true = Sheriff also starts in the crowd
   githubRepo:'',              // optional 'user/repo' if not on github.io
   charYawOffset:0,            // adjust if your character models face the wrong way (radians)
   scaling:{baseCivilians:20,perPlayer:10,maxPlayers:6},
@@ -66,7 +75,7 @@ const CONFIG={
 // ===================== MAPS =====================
 function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const MAPS={
- suburb:{name:'Suburban Neighborhood',w:130,d:130,indoor:false,build(add,r){
+ suburb:{name:'Suburban Neighborhood',w:130,d:130,indoor:false,crowd:[22.5,22.5],sheriffAt:[-22.5,-22.5],build(add,r){
   const iv=[[-300,-27],[-18,18],[27,300]];
   for(const p of[-22.5,22.5]){
    add({k:'road',x:p,z:0,w:9,d:600});add({k:'road',x:0,z:p,w:600,d:9});
@@ -88,7 +97,7 @@ const MAPS={
   for(const x of[-12,12])add({k:'prop',m:'vending',x,z:-16,w:.9,d:.85,h:1.85,c:0xd33});
   for(const x of[-4,4])add({k:'prop',m:'bikeRack',x,z:-17,w:2.6,d:.74,h:.8,c:0x888});
  }},
- museum:{name:'The Grand Museum',w:110,d:76,indoor:true,build(add,r){
+ museum:{name:'The Grand Museum',w:110,d:76,indoor:true,crowd:[0,-27],sheriffAt:[0,27],build(add,r){
   const W=(x1,z1,x2,z2)=>{add({k:'wall',x:(x1+x2)/2,z:(z1+z2)/2,w:Math.abs(x2-x1)+1,d:Math.abs(z2-z1)+1,h:7});
    const hor=z1===z2,L=Math.abs(hor?x2-x1:z2-z1),lo=Math.min(hor?x1:z1,hor?x2:z2);
    for(let t=lo+5;t<lo+L-3;t+=7)for(const s of[-1,1])add({k:'painting',nocol:true,x:hor?t:x1+s*.53,z:hor?z1+s*.53:t,ry:hor?(s>0?0:Math.PI):(s>0?Math.PI/2:-Math.PI/2),i:Math.abs(Math.round(t*3)+(s>0?1:0))%6})};
@@ -116,7 +125,12 @@ const keys={};let yaw=0,pitch=0,locked=false,cd=0,fxs=[],ac=null,toastT=0,civLef
 // ===================== THREE SETUP =====================
 const renderer=new THREE.WebGLRenderer({canvas:$('c'),antialias:true});renderer.outputEncoding=THREE.sRGBEncoding;renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
 const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(75,1,.05,1100),worldG=new THREE.Group(),entG=new THREE.Group();scene.add(worldG,entG,cam);cam.rotation.order='YXZ';
-const hemi=new THREE.HemisphereLight(0xdfeeff,0x667755,.85),sun=new THREE.DirectionalLight(0xfff2dd,1.1);sun.position.set(40,80,30);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-45,right:45,top:45,bottom:-45,near:1,far:220});sun.shadow.bias=-.0004;scene.add(hemi,sun,sun.target);let SKY=null,VM=null,vmK=0,bob=0;
+const hemi=new THREE.HemisphereLight(0xdfeeff,0x667755,.85),sun=new THREE.DirectionalLight(0xfff2dd,1.1);sun.position.set(40,80,30);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-45,right:45,top:45,bottom:-45,near:1,far:220});sun.shadow.bias=-.0004;scene.add(hemi,sun,sun.target);let SKY=null,VM=null,vmK=0,bob=0,WORLD=null,LAMPN=0,GLOWT=null,GLOWM=null;
+const SET={time:'day',sens:1,fov:75,quality:'high',flash:true};
+try{Object.assign(SET,JSON.parse(localStorage.getItem('hsmm')||'{}'))}catch(e){}
+const saveSet=()=>{try{localStorage.setItem('hsmm',JSON.stringify(SET))}catch(e){}};
+const flash=new THREE.SpotLight(0xfff0d0,0,45,.55,.6,1.4);cam.add(flash,flash.target);flash.target.position.set(0,0,-5);
+let HIST=[],LQ=[],tickN=0,seqN=0,lastSeq=-1,lastSentLeft=-1,PING=0,pingT=0,lastIn=[],lastInT=0,MT=null;
 function resize(){renderer.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',resize);resize();
 // ===================== ASSETS =====================
 const cache={};
@@ -165,10 +179,26 @@ function pl(w,d,y,col,map){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),m
 function mkTree(x,z,sc){const g=new THREE.Group(),v=Math.abs(Math.sin(x*12.9+z*7.3))*2.99|0,cm=gmat('leaf'+v,[0x2f7d32,0x3d8f3a,0x4a9a45][v]);
  const tr=new THREE.Mesh(SG.t,gmat('trunk',0x6b4a2b));tr.position.y=1.1;const a=new THREE.Mesh(SG.s,cm);a.position.y=3.4;a.scale.set(1,1.15,1);const b=new THREE.Mesh(SG.s,cm);b.position.set(.5,4.6,.2);b.scale.set(.7,.8,.7);
  g.add(tr,a,b);g.position.set(x,0,z);g.scale.setScalar(sc||1);return g}
-function skyDome(ind){const c=document.createElement('canvas');c.width=4;c.height=256;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,256);
- g.addColorStop(0,'#3a7bd5');g.addColorStop(.42,'#8fc4ee');g.addColorStop(.5,'#e8f4fc');g.addColorStop(.52,'#b4c8a4');g.addColorStop(1,'#7f9a74');x.fillStyle=g;x.fillRect(0,0,4,256);
- const grp=new THREE.Group(),sk=new THREE.Mesh(new THREE.SphereGeometry(800,24,16),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),side:THREE.BackSide,fog:false,depthWrite:false}));sk.renderOrder=-2;
- const su=new THREE.Mesh(new THREE.SphereGeometry(28,12,8),new THREE.MeshBasicMaterial({color:0xfff6d0,fog:false}));su.position.set(380,480,280);grp.add(sk,su);grp.traverse(o=>nf(o,1,1));return grp}
+function skyTex(night){const c=document.createElement('canvas');c.width=512;c.height=256;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,256);
+ if(night){g.addColorStop(0,'#03060f');g.addColorStop(.42,'#101c38');g.addColorStop(.5,'#25385f');g.addColorStop(.52,'#0d1420');g.addColorStop(1,'#070b12')}
+ else{g.addColorStop(0,'#3a7bd5');g.addColorStop(.42,'#8fc4ee');g.addColorStop(.5,'#e8f4fc');g.addColorStop(.52,'#b4c8a4');g.addColorStop(1,'#7f9a74')}
+ x.fillStyle=g;x.fillRect(0,0,512,256);
+ if(night){for(let i=0;i<460;i++){x.fillStyle='rgba(255,255,255,'+(.3+Math.random()*.7)+')';x.fillRect(Math.random()*512,Math.random()*120,1+(Math.random()<.12),1+(Math.random()<.12))}}
+ else{for(let i=0;i<24;i++){const cx=Math.random()*512,cy=22+Math.random()*80;for(let k=0;k<7;k++){x.fillStyle='rgba(255,255,255,.2)';x.beginPath();x.ellipse(cx+k*9-27,cy+Math.random()*8,22+Math.random()*14,7+Math.random()*4,0,0,7);x.fill()}}}
+ return new THREE.CanvasTexture(c)}
+function skyDome(ind){const td=skyTex(false),tn=skyTex(true),grp=new THREE.Group(),mat2=new THREE.MeshBasicMaterial({map:td,side:THREE.BackSide,fog:false,depthWrite:false}),sk=new THREE.Mesh(new THREE.SphereGeometry(800,24,16),mat2);sk.renderOrder=-2;
+ const su=new THREE.Mesh(new THREE.SphereGeometry(28,12,8),new THREE.MeshBasicMaterial({color:0xfff6d0,fog:false}));su.position.set(380,480,280);
+ const mo=new THREE.Mesh(new THREE.SphereGeometry(24,16,12),new THREE.MeshBasicMaterial({color:0xe6ecff,fog:false}));mo.position.set(-380,470,-260);mo.visible=false;
+ grp.add(sk,su,mo);grp.traverse(o=>nf(o,1,1));return{grp,mat:mat2,td,tn,sunM:su,moon:mo}}
+function applyTime(){const W=WORLD;if(!W)return;const n=SET.time==='night',q=SET.quality,hz=n?0x0b1226:0xdcebf7;
+ scene.background.set(hz);scene.fog.color.set(hz);
+ hemi.color.set(n?0x4a5c9a:0xdfeeff);hemi.groundColor.set(n?0x151a2a:0x667755);hemi.intensity=n?(W.ind?.4:.34):.85;
+ sun.color.set(n?0x8fa8ff:0xfff2dd);sun.intensity=n?.55:(W.ind?.3:1.15);sun.castShadow=!W.ind&&q!=='low';
+ W.mat.map=n?W.tn:W.td;W.mat.needsUpdate=true;W.sunM.visible=!n;W.moon.visible=n;
+ W.lamps.forEach(l=>{l.head.material.color.set(n?0xfff2b0:0x666660);if(l.light)l.light.intensity=n&&q!=='low'?1.7:0;if(l.glow)l.glow.visible=n});
+ W.pls.forEach(l=>l.intensity=n?1.0:.55);flash.intensity=n&&SET.flash?1.6:0;renderer.toneMappingExposure=n?1.2:1.05}
+function applyQuality(){const q=SET.quality;renderer.setPixelRatio(q==='low'?.7:q==='med'?1:Math.min(devicePixelRatio,2));resize();const n=q==='high'?2048:1024;
+ if(sun.shadow.mapSize.x!==n){sun.shadow.mapSize.set(n,n);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null}}applyTime()}
 let ART=[];
 function art(i){if(ART[i])return ART[i];const c=document.createElement('canvas');c.width=128;c.height=96;const x=c.getContext('2d');x.fillStyle=['#d9c9a3','#a9c4d6','#c9a9a0','#a8b99a','#cbbf9a','#9fa8c9'][i%6];x.fillRect(0,0,128,96);
  for(let k=0;k<7;k++){x.fillStyle='hsl('+((i*57+k*43)%360)+',50%,'+(35+k*5)+'%)';x.beginPath();x.arc(Math.random()*128,Math.random()*96,10+Math.random()*28,0,7);x.fill()}
@@ -184,9 +214,8 @@ function fenceVis(o){const g=new THREE.Group(),L=Math.max(o.w,o.d),hor=o.w>o.d,f
  g.position.set(o.x,0,o.z);worldG.add(g)}
 function buildWorld(key,seed){
  const M=MAPS[key],ind=M.indoor,hw=M.w/2,hd=M.d/2,rr=rng(seed+7);worldG.clear();R=[];MW=M.w;MD=M.d;
- const hz=0xdcebf7;scene.background=new THREE.Color(hz);scene.fog=new THREE.Fog(hz,ind?60:80,700);
- hemi.intensity=ind?.85:.85;sun.intensity=ind?.3:1.15;sun.castShadow=!ind;
- SKY=skyDome(ind);worldG.add(SKY);
+ scene.background=new THREE.Color(0xdcebf7);scene.fog=new THREE.Fog(0xdcebf7,ind?60:80,700);
+ WORLD=skyDome(ind);WORLD.ind=ind;WORLD.lamps=[];WORLD.pls=[];SKY=WORLD.grp;worldG.add(SKY);LAMPN=0;
  const out=pl(2000,2000,-.02,0,T('grass',250,250));worldG.add(out);
  const g=pl(M.w,M.d,0,0,T(ind?'floor':'grass',M.w/(ind?8:10),M.d/(ind?8:10)));if(ind)g.userData.nc=1;worldG.add(g);
  for(let i=0;i<22;i++){const a=i/22*6.283+rr(),rad=430+rr()*80,h=new THREE.Mesh(new THREE.SphereGeometry(1,14,9),gmat('hill'+(i%2),i%2?0x5c8660:0x6c8c99));
@@ -194,7 +223,7 @@ function buildWorld(key,seed){
  if(ind){
   worldG.add(pl(M.w+36,M.d+36,-.01,0x8c887f));
   const c=nf(new THREE.Mesh(new THREE.PlaneGeometry(M.w,M.d),mat(0xe6dfd0)),1,1);c.position.y=8;c.rotation.x=Math.PI/2;worldG.add(c);
-  for(let x=-40;x<=40;x+=20)for(let z=-24;z<=24;z+=24){const l=new THREE.PointLight(0xfff0d0,.55,48);l.position.set(x,6.5,z);worldG.add(l);
+  for(let x=-40;x<=40;x+=20)for(let z=-24;z<=24;z+=24){const l=new THREE.PointLight(0xfff0d0,.55,48);l.position.set(x,6.5,z);worldG.add(l);WORLD.pls.push(l);
    const st=nf(new THREE.Mesh(new THREE.BoxGeometry(6,.1,1.2),new THREE.MeshBasicMaterial({color:0xfff4d6})),1,1);st.position.set(x,7.95,z);worldG.add(st)}
   for(let i=0;i<46;i++){const a=i/46*6.283,rad=170+rr()*120,h=25+rr()*80,w=14+rr()*18,b=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),gmat('bld'+(i%3),[0x8e9bb0,0xa4adbb,0x7d8aa0][i%3]));b.position.set(Math.cos(a)*rad,h/2-1,Math.sin(a)*rad);worldG.add(nf(b,1,1))}
  }
@@ -211,7 +240,11 @@ function buildWorld(key,seed){
     if(/cottage|flower/.test(o.m||'')){const rf=new THREE.Mesh(new THREE.ConeGeometry(Math.max(o.w,o.d)*.75,2.5,4),mat(0x7a3b2e));rf.position.y=h+1.2;rf.rotation.y=Math.PI/4;m.add(rf)}m.position.set(o.x,0,o.z)}
    worldG.add(m);return}
   if(k==='tree'){worldG.add(mkTree(o.x,o.z,1.1));return}
-  if(k==='lamp'){m=new THREE.Group();const p=new THREE.Mesh(new THREE.CylinderGeometry(.07,.1,h,8),gmat('lp',0x444a52));p.position.y=h/2;const hd2=nf(new THREE.Mesh(new THREE.SphereGeometry(.3,10,8),new THREE.MeshBasicMaterial({color:0xfff2b0})),1,1);hd2.position.y=h;m.add(p,hd2);m.position.set(o.x,0,o.z);worldG.add(m);return}
+  if(k==='lamp'){m=new THREE.Group();const p=new THREE.Mesh(new THREE.CylinderGeometry(.07,.1,h,8),gmat('lp',0x444a52));p.position.y=h/2;const hd2=nf(new THREE.Mesh(new THREE.SphereGeometry(.3,10,8),new THREE.MeshBasicMaterial({color:0xfff2b0})),1,1);hd2.position.y=h;m.add(p,hd2);const lp={head:hd2};
+   if(!GLOWM){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),gr=x.createRadialGradient(32,32,0,32,32,32);gr.addColorStop(0,'rgba(255,230,160,1)');gr.addColorStop(.3,'rgba(255,210,120,.35)');gr.addColorStop(1,'rgba(255,200,100,0)');x.fillStyle=gr;x.fillRect(0,0,64,64);GLOWM=new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),blending:THREE.AdditiveBlending,depthWrite:false,fog:false})}
+   const gs=new THREE.Sprite(GLOWM);gs.scale.set(4.5,4.5,1);gs.position.y=h;gs.visible=false;m.add(gs);lp.glow=gs;
+   if(!ind&&LAMPN++%3===0){const L=new THREE.PointLight(0xffe0a0,0,26,2);L.position.set(o.x,h-.3,o.z);worldG.add(L);lp.light=L}
+   WORLD.lamps.push(lp);m.position.set(o.x,0,o.z);worldG.add(m);return}
   if(k==='col'){m=new THREE.Group();const cc=gmat('cs',0xdcd5c4),sh=new THREE.Mesh(new THREE.CylinderGeometry(.5,.55,h,14),cc);sh.position.y=h/2;
    for(const y of[.2,h-.2]){const b=new THREE.Mesh(new THREE.BoxGeometry(1.3,.4,1.3),cc);b.position.y=y;m.add(b)}m.add(sh);m.position.set(o.x,0,o.z);worldG.add(m);return}
   if(k==='painting'){m=new THREE.Group();const fr=new THREE.Mesh(new THREE.BoxGeometry(3.4,2.4,.06),gmat('fr',0x6b4f1d)),cv=new THREE.Mesh(new THREE.PlaneGeometry(3,2),art(o.i||0));cv.position.z=.04;nf(cv,1,0);m.add(fr,cv);m.position.set(o.x,3.4,o.z);m.rotation.y=o.ry;worldG.add(m);return}
@@ -229,23 +262,28 @@ function buildWorld(key,seed){
  if(!ind)for(let x=-225;x<=225;x+=45)for(let z=-225;z<=225;z+=45){if(Math.max(Math.abs(x),Math.abs(z))<=80)continue;
   add({k:'prop',nocol:true,m:rr()<.5?'cottage':'flowerShop',x:x+rr()*6-3,z:z+rr()*6-3,w:8.8,d:7.5,h:6,ry:Math.floor(rr()*4)*Math.PI/2,c:0xcfa77a})}
  worldG.traverse(o=>{if(o.isMesh){o.castShadow=!o.userData.nc;o.receiveShadow=!o.userData.nr}});
+ buildGrid();applyTime();
 }
-function resolve(x,z,r){for(const q of R){const cx=Math.max(q.x1,Math.min(x,q.x2)),cz=Math.max(q.z1,Math.min(z,q.z2)),dx=x-cx,dz=z-cz,d=Math.hypot(dx,dz);if(d<r){if(d>1e-4){x=cx+dx/d*r;z=cz+dz/d*r}else x=q.x1-r}}return[x,z]}
+let GRD=null;const CS=10,gi=(v,S,n)=>Math.max(0,Math.min(n-1,Math.floor((v+S/2)/CS)+1));
+function buildGrid(){const nx=Math.ceil(MW/CS)+2,nz=Math.ceil(MD/CS)+2;GRD={nx,nz,c:[]};for(let i=0;i<nx*nz;i++)GRD.c.push([]);
+ for(const q of R){const x0=gi(q.x1-1,MW,nx),x1=gi(q.x2+1,MW,nx),z0=gi(q.z1-1,MD,nz),z1=gi(q.z2+1,MD,nz);for(let a=x0;a<=x1;a++)for(let b=z0;b<=z1;b++)GRD.c[a*nz+b].push(q)}}
+function resolve(x,z,r){const l=GRD?GRD.c[gi(x,MW,GRD.nx)*GRD.nz+gi(z,MD,GRD.nz)]:R;for(const q of l){const cx=Math.max(q.x1,Math.min(x,q.x2)),cz=Math.max(q.z1,Math.min(z,q.z2)),dx=x-cx,dz=z-cz,d=Math.hypot(dx,dz);if(d<r){if(d>1e-4){x=cx+dx/d*r;z=cz+dz/d*r}else x=q.x1-r}}return[x,z]}
 function freePoint(r){for(let i=0;i<300;i++){const x=(Math.random()-.5)*(MW-6),z=(Math.random()-.5)*(MD-6);let ok=true;for(const q of R)if(x>q.x1-r-.5&&x<q.x2+r+.5&&z>q.z1-r-.5&&z<q.z2+r+.5){ok=false;break}if(ok)return[x,z]}return[0,0]}
 function wallT(ox,oz,dx,dz,max){let t=max;for(const q of R){if(q.h<1.7)continue;let a=0,b=t,ok=true;for(const[o,d,lo,hi]of[[ox,dx,q.x1,q.x2],[oz,dz,q.z1,q.z2]]){if(Math.abs(d)<1e-6){if(o<lo||o>hi){ok=false;break}}else{let t1=(lo-o)/d,t2=(hi-o)/d;if(t1>t2)[t1,t2]=[t2,t1];a=Math.max(a,t1);b=Math.min(b,t2)}}if(ok&&a<=b&&a>0)t=Math.min(t,a)}return t}
 // ===================== CHARACTERS =====================
 function mkChar(kind){
- const g=new THREE.Group(),inner=new THREE.Group();g.add(inner);const e={g,inner,acts:{},mixer:null,x:0,z:0,ry:0,tx:0,tz:0,tr:0,m:0,a:1,init:0,kt:0,knife:null};
+ const g=new THREE.Group(),inner=new THREE.Group();g.add(inner);const e={g,inner,acts:{},mixer:null,x:0,z:0,ry:0,tx:0,tz:0,tr:0,m:0,a:1,init:0,kt:0,knife:null,buf:[]};
  const src=CH[kind];
  if(src){const o=THREE.SkeletonUtils.clone(src.scene);inner.add(o);e.mixer=new THREE.AnimationMixer(o);src.animations.forEach(an=>{const a=e.mixer.clipAction(an);a.play();a.setEffectiveWeight(0);e.acts[an.name]=a})}
  else{const col=kind==='sheriff'?0x2f6fd0:kind==='murderer'?0x333333:0x8a5a3a;const b=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,1.2,12),mat(col));b.position.y=.7;const h=new THREE.Mesh(new THREE.SphereGeometry(.3,12,10),mat(0xf0c8a0));h.position.y=1.5;inner.add(b,h)}
  if(kind==='sheriff'){const bl=PR.blaster?PR.blaster.scene.clone(true):new THREE.Mesh(new THREE.BoxGeometry(.1,.1,.35),mat(0x222222));bl.scale.multiplyScalar(PR.blaster?2.2:1);bl.position.set(.3,1.05,.35);inner.add(bl)}
  const kn=new THREE.Mesh(new THREE.BoxGeometry(.05,.05,.6),mat(0xdddddd,{emissive:0x661111}));kn.position.set(.3,1.0,.5);kn.visible=false;inner.add(kn);e.knife=kn;
  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false}});g.visible=false;entG.add(g);return e}
-function setT(e,x,z,r,m,a){e.tx=x;e.tz=z;e.tr=r;e.m=m;e.a=a;if(!e.init){e.x=x;e.z=z;e.ry=r;e.init=1;e.g.visible=true}}
+function pushS(e,t,x,z,r,m,a){const b=e.buf,l=b[b.length-1];if(l&&t-l.t>160)b.push({t:t-60,x:l.x,z:l.z,r:l.r});b.push({t,x,z,r});e.m=m;e.a=a;if(!e.init){e.init=1;e.x=x;e.z=z;e.ry=r;e.g.visible=true}if(b.length>8)b.shift()}
+function setT(e,x,z,r,m,a){pushS(e,performance.now(),x,z,r,m,a)}
 function updEnt(e,dt,local){
  if(local){e.x=me.x;e.z=me.z;e.ry=me.ry;e.m=me.m;e.a=me.a;if(!e.init){e.init=1;e.g.visible=true}}
- else{const k=1-Math.exp(-14*dt);e.x+=(e.tx-e.x)*k;e.z+=(e.tz-e.z)*k;let d=e.tr-e.ry;d=Math.atan2(Math.sin(d),Math.cos(d));e.ry+=d*k}
+ else{const rt=performance.now()-CONFIG.net.interp,b=e.buf;if(b.length){while(b.length>2&&b[1].t<=rt)b.shift();const A=b[0],B=b[1]||A;let u=B.t>A.t?(rt-A.t)/(B.t-A.t):1;u=u<0?0:u>1?1:u;e.x=A.x+(B.x-A.x)*u;e.z=A.z+(B.z-A.z)*u;let d=B.r-A.r;d=Math.atan2(Math.sin(d),Math.cos(d));e.ry=A.r+d*u}}
  e.g.position.set(e.x,0,e.z);e.g.rotation.y=e.ry+CONFIG.charYawOffset;
  if(!e.a){e.inner.rotation.x=-Math.PI/2;e.inner.position.y=.35;e.knife.visible=false;return}
  if(e.mixer){if(e.acts.walk)e.acts.walk.setEffectiveWeight(e.m===1?1:0);if(e.acts.run)e.acts.run.setEffectiveWeight(e.m===2?1:0);if(!e.acts.walk&&!e.acts.run){}e.mixer.update(e.m?dt:0)}
@@ -268,21 +306,35 @@ function onEvent(ev){
  else if(ev.k==='kill'){if(ev.p!==undefined&&ev.p===me.id){me.a=0;toast('You were killed!')}else toast(ev.msg||'Someone was killed!');beep(60,.4,'sawtooth')}
 }
 // ===================== NETWORK =====================
-const send=(id,m)=>{const p=players.get(id);if(p&&p.conn&&p.conn.open)try{p.conn.send(m)}catch(e){}};
-const bcast=m=>players.forEach(p=>{if(p.conn&&p.conn.open)try{p.conn.send(m)}catch(e){}});
-function show(id){['menu','lobby','over'].forEach(s=>$(s).classList.toggle('on',s===id));$('hud').style.display=id?'none':'block'}
+const J=JSON.stringify,TAU=Math.PI*2,TICK=1/CONFIG.net.tick,INTERP=CONFIG.net.interp,MCH=16000;
+const rawSend=(c,d)=>{try{if(c&&c.open)c.send(d)}catch(e){}};
+const send=(id,m)=>{const p=players.get(id);if(p)rawSend(p.conn,J(m))};
+const bcast=m=>{const s=J(m);players.forEach(p=>rawSend(p.conn,s))};
+const bbin=b=>players.forEach(p=>{const c=p.conn;if(c&&c.open&&!(c.dataChannel&&c.dataChannel.bufferedAmount>96000))rawSend(c,b)});
+const toAB=d=>d instanceof ArrayBuffer?d:(d&&d.buffer?d.buffer.slice(d.byteOffset,d.byteOffset+d.byteLength):null);
+const MB={};
+function modelBuf(n){if(MB[n])return MB[n];if(LOCAL[n])return MB[n]=LOCAL[n];const e=window.MODELS&&MODELS[n];if(!e)return null;const bin=atob(e),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return MB[n]=u.buffer}
+async function sendModels(p,names){const c=p.conn,list=names.filter(n=>modelBuf(n));
+ send(p.id,{t:'mh',names:list,sizes:list.map(n=>modelBuf(n).byteLength)});
+ for(let ni=0;ni<list.length;ni++){const u8=new Uint8Array(modelBuf(list[ni]));
+  for(let ci=0,off=0;off<u8.length;ci++,off+=MCH){
+   while(c.open&&c.dataChannel&&c.dataChannel.bufferedAmount>256000)await new Promise(r=>setTimeout(r,25));
+   if(!c.open)return;const part=u8.subarray(off,Math.min(off+MCH,u8.length)),b=new Uint8Array(4+part.length);b[0]=5;b[1]=ni;b[2]=ci>>8;b[3]=ci&255;b.set(part,4);rawSend(c,b.buffer)}}
+ send(p.id,{t:'mdone'})}
+function missingModels(){const o=new Set();['sheriff','murderer','civilian'].forEach(k=>{if(!CH[k])o.add(bkey(CONFIG.models[k]))});if(!PR.blaster)o.add(bkey(CONFIG.models.blaster));for(const k in CONFIG.models.props)if(!PR[k])o.add(bkey(CONFIG.models.props[k]));return[...o]}
+function show(id){$('pause').classList.remove('on');['menu','lobby','over'].forEach(s=>$(s).classList.toggle('on',s===id));$('hud').style.display=id?'none':'block'}
 function fail(msg){G.state='menu';G.test=0;if(peer){try{peer.destroy()}catch(e){}}peer=conn=null;players=new Map();document.exitPointerLock&&document.exitPointerLock();show('menu');$('menuErr').textContent=msg;$('bHost').disabled=$('bJoin').disabled=false}
 function civCount(n){return CONFIG.scaling.baseCivilians+CONFIG.scaling.perPlayer*n}
-function lobbyUI(n,map){$('lp').textContent=n;$('lc').textContent=civCount(n);$('mapName').textContent='Map: '+MAPS[map].name;$('mapSel').value=map;$('bStart').disabled=G.net==='host'?n<2:true}
+function lobbyUI(n,map){$('lp').textContent=n;$('lc').textContent=civCount(n);$('mapName').textContent='Map: '+MAPS[map].name;$('mapSel').value=map;const wait=G.net==='host'&&[...players.values()].some(p=>!p.ready);$('bStart').disabled=G.net==='host'?(n<2||wait):true;if(wait)$('lobStat').textContent='Waiting for a player to finish loading models…'}
 function lobbyBcast(){lobbyUI(players.size,G.map);bcast({t:'lobby',n:players.size,map:G.map})}
 function hostGame(){
  G.net='host';$('menuErr').textContent='';$('bHost').disabled=$('bJoin').disabled=true;
  const mk=()=>{roomCode='hsmm-'+Math.random().toString(36).slice(2,8);peer=new Peer(roomCode);
-  peer.on('open',id=>{G.state='lobby';players=new Map([[0,{id:0,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian'}]]);nextId=1;
+  peer.on('open',id=>{G.state='lobby';players=new Map([[0,{id:0,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian',ready:true}]]);nextId=1;
    const u=new URL(location.href);u.search='';u.hash='';$('link').value=u.toString()+'?room='+id;$('inv').style.display='';$('mapSel').style.display='';$('mapName').style.display='none';$('lobErr').textContent='';$('lobStat').textContent='Waiting for players… share the invite link.';lobbyUI(1,G.map);show('lobby')});
   peer.on('connection',c=>{
-   if(G.state!=='lobby'||players.size>=CONFIG.scaling.maxPlayers){c.on('open',()=>{try{c.send({t:'full'})}catch(e){}setTimeout(()=>c.close(),400)});return}
-   const id=nextId++;c.on('open',()=>{players.set(id,{id,conn:c,x:0,z:0,ry:0,m:0,a:1,role:'civilian'});c.send({t:'hello',id});lobbyBcast()});
+   if(G.state!=='lobby'||players.size>=CONFIG.scaling.maxPlayers){c.on('open',()=>{try{c.send(J({t:'full'}))}catch(e){}setTimeout(()=>c.close(),400)});return}
+   const id=nextId++;c.on('open',()=>{players.set(id,{id,conn:c,x:0,z:0,ry:0,m:0,a:1,role:'civilian',ready:false});c.send(J({t:'hello',id}));lobbyBcast()});
    c.on('data',d=>onHostData(id,d));c.on('close',()=>drop(id));c.on('error',()=>drop(id))});
   peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
   peer.on('error',e=>{if(e.type==='unavailable-id'){try{peer.destroy()}catch(x){}mk()}else if(G.state==='menu'||!G.state)fail('Network error: '+e.type);else $('lobErr').textContent='Network issue: '+e.type})};
@@ -298,25 +350,50 @@ function joinGame(raw){
  let opened=false;
  try{peer=new Peer()}catch(e){return fail('Could not start networking.')}
  const to=setTimeout(()=>{if(!opened)fail('Could not reach the host (timed out).')},12000);
- peer.on('open',()=>{conn=peer.connect(code,{reliable:true});
-  conn.on('open',()=>{opened=true;clearTimeout(to);G.state='lobby';$('inv').style.display='none';$('mapSel').style.display='none';$('mapName').style.display='';$('lobStat').textContent='Connected! Waiting for the host to start…';$('lobErr').textContent='';$('load').textContent='';show('lobby')});
+ peer.on('open',()=>{conn=peer.connect(code,{reliable:false,serialization:'raw'});
+  conn.on('open',()=>{opened=true;clearTimeout(to);G.state='lobby';$('inv').style.display='none';$('mapSel').style.display='none';$('mapName').style.display='';$('lobStat').textContent='Connected! Waiting for the host to start…';$('lobErr').textContent='';$('load').textContent='';show('lobby');const miss=missingModels();if(miss.length){$('lobStat').textContent='Requesting missing models from the host…';rawSend(conn,J({t:'needm',names:miss}))}else rawSend(conn,J({t:'ready'}))});
   conn.on('data',onClientData);conn.on('close',()=>{if(G.state!=='menu')fail('Disconnected from host.')});conn.on('error',()=>fail('Connection error.'))});
  peer.on('error',e=>{clearTimeout(to);fail(e.type==='peer-unavailable'?'Room not found. Check the link/code.':'Network error: '+e.type)});
  peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
 }
-function onHostData(id,d){const p=players.get(id);if(!p||!d)return;
- if(d.t==='in'&&G.state==='play'&&p.a&&isFinite(d.x)&&isFinite(d.z)){p.x=d.x;p.z=d.z;p.ry=d.ry;p.m=d.m}
- else if(d.t==='shoot')doShoot(id,d.ry);else if(d.t==='stab')doStab(id,d.ry)}
-function onClientData(d){if(!d)return;
- if(d.t==='hello')me={id:d.id};
- else if(d.t==='full')fail('The game is full or already started.');
- else if(d.t==='lobby'){if(G.state!=='play'){G.state='lobby';show('lobby')}lobbyUI(d.n,d.map)}
- else if(d.t==='start'){G.map=d.map;me={id:d.id,x:0,z:0,ry:0,m:0,a:1,role:d.role};const self=d.pl.find(q=>q[0]===d.id);me.x=self[1];me.z=self[2];
-  setupWorld(d.map,d.seed,d.n,d.sh,d.pl.map(q=>q[0]),d.id,d.role);beginPlay()}
- else if(d.t==='s'){for(let i=0;i<V.c.length;i++){const o=i*5;setT(V.c[i],d.c[o],d.c[o+1],d.c[o+2],d.c[o+3],d.c[o+4])}
-  for(let i=0;i<d.p.length;i+=6){const id=d.p[i];if(id===me.id){if(!d.p[i+5])me.a=0;continue}const e=V.p[id];if(e)setT(e,d.p[i+1],d.p[i+2],d.p[i+3],d.p[i+4],d.p[i+5])}civLeft=d.n}
- else if(d.t==='ev')onEvent(d.e);
- else if(d.t==='over')showOver(d)}
+function onHostData(id,d){const p=players.get(id);if(!p||d==null)return;
+ if(typeof d==='string'){let m;try{m=JSON.parse(d)}catch(e){return}
+  if(m.t==='shoot')doShoot(id,m.ry,m.ago);else if(m.t==='stab')doStab(id,m.ry,m.ago);
+  else if(m.t==='ready'){p.ready=true;lobbyBcast()}
+  else if(m.t==='needm'&&Array.isArray(m.names))sendModels(p,m.names.filter(x=>typeof x==='string').slice(0,16));return}
+ const ab=toAB(d);if(!ab)return;const dv=new DataView(ab),t=dv.getUint8(0);
+ if(t===1&&ab.byteLength>=7&&G.state==='play'&&p.a){let x=dv.getInt16(1)/100,z=dv.getInt16(3)/100;const now=performance.now();
+  if(p.lt){const dt=Math.min(.5,(now-p.lt)/1000),mx=CONFIG.speeds.run*1.6*dt+1,dd=Math.hypot(x-p.x,z-p.z);if(dd>mx){x=p.x+(x-p.x)/dd*mx;z=p.z+(z-p.z)/dd*mx}}
+  [p.x,p.z]=resolve(x,z,.45);p.lt=now;p.ry=dv.getUint8(5)/256*TAU;p.m=dv.getUint8(6)&3}
+ else if(t===3){const b=new Uint8Array(ab.slice(0));b[0]=4;rawSend(p.conn,b.buffer)}}
+function onSnapBin(dv){if(G.state!=='play'||!V.c.length)return;const seq=dv.getUint16(1);
+ if(lastSeq>=0){const df=(seq-lastSeq)&0xffff;if(df===0||df>=0x8000)return}lastSeq=seq;
+ civLeft=dv.getUint16(3);const cnt=dv.getUint16(5),now=performance.now();
+ for(let i=0,o=7;i<cnt;i++,o+=8){const id=dv.getUint16(o),x=dv.getInt16(o+2)/100,z=dv.getInt16(o+4)/100,r=dv.getUint8(o+6)/256*TAU,f=dv.getUint8(o+7),m=f&3,a=(f>>2)&1;let e;
+  if(id<1000)e=V.c[id];else{const pid=id-1000;if(pid===me.id){if(!a)me.a=0;continue}e=V.p[pid]}
+  if(e)pushS(e,now,x,z,r,m,a)}}
+async function onClientData(d){if(d==null)return;
+ if(typeof d!=='string'){const ab=toAB(d);if(!ab)return;const dv=new DataView(ab),t=dv.getUint8(0);
+  if(t===2)onSnapBin(dv);
+  else if(t===4){const rtt=(performance.now()>>>0)-dv.getUint32(1);PING=PING?PING*.8+rtt*.2:rtt}
+  else if(t===5&&MT){const ni=dv.getUint8(1),ci=dv.getUint16(2),u8=new Uint8Array(ab,4);if(!MT.bufs[ni])MT.bufs[ni]=new Uint8Array(MT.sizes[ni]);MT.bufs[ni].set(u8,ci*MCH);MT.recv+=u8.length;
+   $('lobStat').textContent='Downloading models from the host… '+Math.min(99,Math.round(MT.recv/MT.total*100))+'%'}
+  return}
+ let m;try{m=JSON.parse(d)}catch(e){return}
+ if(m.t==='hello')me={id:m.id};
+ else if(m.t==='full')fail('The game is full or already started.');
+ else if(m.t==='lobby'){if(G.state!=='play'){G.state='lobby';show('lobby')}lobbyUI(m.n,m.map)}
+ else if(m.t==='mh'){MT={names:m.names,sizes:m.sizes,bufs:[],recv:0,total:m.sizes.reduce((a,b)=>a+b,0)||1}}
+ else if(m.t==='mdone'){if(MT){MT.names.forEach((n,i)=>{if(MT.bufs[i]){LOCAL[n]=MT.bufs[i].buffer;saveLocal(n,MT.bufs[i].buffer)}});MT=null;await loadAll()}
+  rawSend(conn,J({t:'ready'}));$('lobStat').textContent='Models ready. Waiting for the host to start…'}
+ else if(m.t==='start'){G.map=m.map;lastSeq=-1;me={id:m.id,x:0,z:0,ry:0,m:0,a:1,role:m.role};const self=m.pl.find(q=>q[0]===m.id);me.x=self[1];me.z=self[2];
+  setupWorld(m.map,m.seed,m.n,m.sh,m.pl.map(q=>q[0]),m.id,m.role);beginPlay()}
+ else if(m.t==='ev')onEvent(m.e);
+ else if(m.t==='over')showOver(m)}
+function sendInput(){if(!conn||!conn.open)return;const q=[Math.round(me.x*100),Math.round(me.z*100),Math.round(((me.ry%TAU+TAU)%TAU)/TAU*256)&255,me.m],now=performance.now();
+ if(q.every((v,i)=>v===lastIn[i])&&now-lastInT<1000)return;lastIn=q;lastInT=now;
+ const b=new ArrayBuffer(7),dv=new DataView(b);dv.setUint8(0,1);dv.setInt16(1,q[0]);dv.setInt16(3,q[1]);dv.setUint8(5,q[2]);dv.setUint8(6,q[3]);rawSend(conn,b)}
+
 // ===================== HOST GAME LOGIC =====================
 function startGame(test){
  if(!test&&(G.net!=='host'||players.size<2||G.state!=='lobby'))return;
@@ -324,8 +401,10 @@ function startGame(test){
  players.get(ids[0]).role='sheriff';players.get(ids[1]).role='murderer';
  const n=civCount(players.size),seed=Math.random()*1e9|0;me=players.get(0);
  setupWorld(G.map,seed,n,ids[0],[...players.keys()],0,me.role);
- C=[];for(let i=0;i<n;i++){const[x,z]=freePoint(.8),[tx,tz]=freePoint(.8);C.push({x,z,ry:Math.random()*6.28,m:0,a:1,tx,tz,wait:Math.random()*2,panic:0,sx:0,sz:0,stuck:0})}
- players.forEach(p=>{[p.x,p.z]=freePoint(1)});
+ const M=MAPS[G.map];let sk=0;const crowd=()=>{const i=sk++,r=.8*Math.sqrt(i+1),a=i*2.4;return resolve(M.crowd[0]+Math.cos(a)*r,M.crowd[1]+Math.sin(a)*r,.5)};
+ C=[];for(let i=0;i<n;i++){const[x,z]=crowd(),[tx,tz]=freePoint(.8);C.push({x,z,ry:Math.random()*6.28,m:0,a:1,tx,tz,wait:Math.random()*5,panic:0,sx:0,sz:0,stuck:0})}
+ players.forEach(p=>{p.lt=0;const alone=p.role==='sheriff'&&!CONFIG.spawn.sheriffWithCrowd;[p.x,p.z]=alone?resolve(M.sheriffAt[0],M.sheriffAt[1],.5):crowd()});
+ HIST=[];LQ=[];tickN=0;seqN=0;lastSentLeft=-1;
  const pl=[...players.values()].map(q=>[q.id,q.x,q.z]);
  players.forEach(p=>{if(p.conn)send(p.id,{t:'start',map:G.map,seed,n,sh:ids[0],pl,role:p.role,id:p.id})});
  beginPlay();
@@ -340,22 +419,33 @@ function simCivs(dt){
   const[rx,rz]=resolve(c.x+dx*sp*dt,c.z+dz*sp*dt,.45),mv=Math.hypot(rx-c.x,rz-c.z);c.x=rx;c.z=rz;c.ry=Math.atan2(dx,dz);
   if(mv<sp*dt*.3){c.stuck+=dt;if(c.stuck>.5){c.stuck=0;if(c.panic>0){c.sx=c.x+(Math.random()-.5)*14;c.sz=c.z+(Math.random()-.5)*14}else[c.tx,c.tz]=freePoint(.8)}}else c.stuck=0}
 }
-function syncHost(){C.forEach((c,i)=>setT(V.c[i],c.x,c.z,c.ry,c.m,c.a));players.forEach(p=>{if(p.id!==0)setT(V.p[p.id],p.x,p.z,p.ry,p.m,p.a)});civLeft=C.filter(c=>c.a).length}
-const r2=v=>Math.round(v*100)/100;
-function snap(){const c=[];for(const q of C)c.push(r2(q.x),r2(q.z),r2(q.ry),q.m,q.a);const p=[];players.forEach(q=>p.push(q.id,r2(q.x),r2(q.z),r2(q.ry),q.m,q.a));return{t:'s',c,p,n:civLeft}}
-function targets(selfId){const t=[];C.forEach(c=>{if(c.a)t.push({c,civ:1,x:c.x,z:c.z})});players.forEach(p=>{if(p.a&&p.id!==selfId)t.push({p,x:p.x,z:p.z})});return t}
-function doShoot(id,ry){const p=players.get(id);if(!p||!p.a||p.role!=='sheriff'||G.state!=='play'||!isFinite(ry))return;
+function syncHost(){const now=performance.now();C.forEach((c,i)=>pushS(V.c[i],now,c.x,c.z,c.ry,c.m,c.a?1:0));players.forEach(p=>{if(p.id!==0)pushS(V.p[p.id],now,p.x,p.z,p.ry,p.m,p.a?1:0)});civLeft=C.filter(c=>c.a).length}
+function hostTick(){simCivs(TICK);syncHost();
+ const hc=new Float32Array(C.length*2);C.forEach((c,i)=>{hc[i*2]=c.x;hc[i*2+1]=c.z});const hp={};players.forEach(p=>{hp[p.id]=[p.x,p.z]});HIST.push({t:performance.now(),c:hc,p:hp});if(HIST.length>12)HIST.shift();
+ tickN++;const full=tickN%CONFIG.net.tick===1,ch=[];
+ const chk=(id,x,z,ry,m,a)=>{const q=LQ[id]||(LQ[id]=[NaN,0,0,0]),xi=Math.round(x*100),zi=Math.round(z*100),ri=Math.round(((ry%TAU+TAU)%TAU)/TAU*256)&255,f=m|(a<<2);
+  if(full||q[0]!==xi||q[1]!==zi||q[2]!==ri||q[3]!==f){q[0]=xi;q[1]=zi;q[2]=ri;q[3]=f;ch.push(id,xi,zi,ri,f)}};
+ C.forEach((c,i)=>chk(i,c.x,c.z,c.ry,c.m,c.a?1:0));players.forEach(p=>chk(1000+p.id,p.x,p.z,p.ry,p.m,p.a?1:0));
+ const cnt=ch.length/5;if(!cnt&&!full&&civLeft===lastSentLeft)return;lastSentLeft=civLeft;
+ const b=new ArrayBuffer(7+cnt*8),dv=new DataView(b);dv.setUint8(0,2);seqN=(seqN+1)&0xffff;dv.setUint16(1,seqN);dv.setUint16(3,civLeft);dv.setUint16(5,cnt);
+ for(let i=0,o=7;i<cnt;i++,o+=8){dv.setUint16(o,ch[i*5]);dv.setInt16(o+2,ch[i*5+1]);dv.setInt16(o+4,ch[i*5+2]);dv.setUint8(o+6,ch[i*5+3]);dv.setUint8(o+7,ch[i*5+4])}
+ bbin(b)}
+function targets(selfId,ago){const t=[],want=performance.now()-(ago||0);let h=null;
+ if(ago&&HIST.length){let bd=1e9;for(const e of HIST){const d=Math.abs(e.t-want);if(d<bd){bd=d;h=e}}}
+ C.forEach((c,i)=>{if(c.a)t.push({c,civ:1,x:h?h.c[i*2]:c.x,z:h?h.c[i*2+1]:c.z})});
+ players.forEach(p=>{if(p.a&&p.id!==selfId){const q=h&&h.p[p.id];t.push({p,x:q?q[0]:p.x,z:q?q[1]:p.z})}});return t}
+function doShoot(id,ry,ago){const p=players.get(id);if(!p||!p.a||p.role!=='sheriff'||G.state!=='play'||!isFinite(ry))return;
  const dx=Math.sin(ry),dz=Math.cos(ry),mt=wallT(p.x,p.z,dx,dz,70);let best=null;
- for(const t of targets(id)){const rx=t.x-p.x,rz=t.z-p.z,d=rx*dx+rz*dz;if(d<0||d>mt)continue;if(Math.abs(rx*dz-rz*dx)<.7&&(!best||d<best.d))best={d,t}}
+ for(const t of targets(id,ago)){const rx=t.x-p.x,rz=t.z-p.z,d=rx*dx+rz*dz;if(d<0||d>mt)continue;if(Math.abs(rx*dz-rz*dx)<.7&&(!best||d<best.d))best={d,t}}
  emit({k:'shot',x:p.x,z:p.z,ry,len:best?best.d:mt});panicAt(p.x,p.z,CONFIG.shotPanicRadius);
  if(!best)return;
  if(best.t.civ){best.t.c.a=0;emit({k:'kill',msg:'The Sheriff shot an innocent civilian!'});over('murderer','The Sheriff shot an innocent civilian!')}
  else{best.t.p.a=0;emit({k:'kill',p:best.t.p.id,msg:'A player was shot!'});if(best.t.p.role==='murderer')over('sheriff','The Sheriff took down the Murderer!');else over('murderer','The Sheriff shot an innocent player!')}}
-function doStab(id,ry){const p=players.get(id);if(!p||!p.a||p.role!=='murderer'||G.state!=='play'||!isFinite(ry))return;
+function doStab(id,ry,ago){const p=players.get(id);if(!p||!p.a||p.role!=='murderer'||G.state!=='play'||!isFinite(ry))return;
  const dx=Math.sin(ry),dz=Math.cos(ry);emit({k:'stab',id});let best=null;
- for(const t of targets(id)){const rx=t.x-p.x,rz=t.z-p.z,d=Math.hypot(rx,rz);if(d>2.4)continue;if(d>.3&&(rx*dx+rz*dz)/d<.2)continue;if(wallT(p.x,p.z,rx/(d||1),rz/(d||1),d)<d-.2)continue;if(!best||d<best.d)best={d,t}}
+ for(const t of targets(id,ago)){const rx=t.x-p.x,rz=t.z-p.z,d=Math.hypot(rx,rz);if(d>2.4)continue;if(d>.3&&(rx*dx+rz*dz)/d<.2)continue;if(wallT(p.x,p.z,rx/(d||1),rz/(d||1),d)<d-.2)continue;if(!best||d<best.d)best={d,t}}
  if(!best)return;
- if(best.t.civ){best.t.c.a=0;emit({k:'kill',msg:'Someone was murdered!'});panicAt(best.t.x,best.t.z,CONFIG.killPanicRadius);syncHost();if(civLeft<=0)over('murderer','The Murderer eliminated every civilian!')}
+ if(best.t.civ){best.t.c.a=0;emit({k:'kill',msg:'Someone was murdered!'});panicAt(best.t.x,best.t.z,CONFIG.killPanicRadius);civLeft=C.filter(c=>c.a).length;if(civLeft<=0)over('murderer','The Murderer eliminated every civilian!')}
  else{best.t.p.a=0;emit({k:'kill',p:best.t.p.id,msg:'A player was murdered!'});if(best.t.p.role==='sheriff')over('murderer','The Murderer killed the Sheriff!')}}
 function sandbox(role){G.net='host';G.test=role;G.state='lobby';players=new Map([[0,{id:0,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian'}],[1,{id:1,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian'}]]);startGame(role);toast('Sandbox: the other player is a motionless dummy')}
 function over(win,why){if(G.state!=='play')return;let m=-1;players.forEach(p=>{if(p.role==='murderer')m=p.id});const msg={t:'over',win,why,m,sh:sheriffId};bcast(msg);showOver(msg)}
@@ -364,7 +454,7 @@ function showOver(d){G.state='over';document.exitPointerLock&&document.exitPoint
  $('oR').innerHTML='You were '+(me.role==='murderer'?'the <b class="murderer">Murderer</b>':me.role==='sheriff'?'the <b class="sheriff">Sheriff</b>':'a <b class="civilian">Civilian</b>')+' — <b>'+(myWin?'You win!':'You lose.')+'</b><br>Murderer: Player '+(d.m+1);
  show('over')}
 // ===================== PLAY =====================
-function beginPlay(){G.state='play';cd=1;yaw=0;pitch=0;cam.fov=75;cam.updateProjectionMatrix();buildVM(me.role);show(null);$('hud').style.display='block';
+function beginPlay(){G.state='play';cd=1;yaw=0;pitch=0;cam.fov=SET.fov;cam.updateProjectionMatrix();buildVM(me.role);show(null);$('hud').style.display='block';
  const r=me.role;$('role').textContent={sheriff:'⭐ SHERIFF',murderer:'🔪 MURDERER',civilian:'🙂 CIVILIAN'}[r];$('role').className='role '+r;
  $('obj').textContent={sheriff:'Find and shoot the Murderer. Shooting an innocent ends the game!',murderer:'Blend in. Stab every civilian or the Sheriff.',civilian:'Stay alive and stay out of trouble.'}[r];
  $('lock').style.display='block'}
@@ -373,8 +463,8 @@ function moveMe(dt){cd-=dt;if(!me.a){me.m=0;return}me.ry=yaw;
  if(f||s){const fx=Math.sin(yaw),fz=Math.cos(yaw);let dx=fx*f-Math.cos(yaw)*s,dz=fz*f+Math.sin(yaw)*s;const l=Math.hypot(dx,dz);dx/=l;dz/=l;
   const run=keys.ShiftLeft||keys.ShiftRight,sp=run?CONFIG.speeds.run:CONFIG.speeds.walk;[me.x,me.z]=resolve(me.x+dx*sp*dt,me.z+dz*sp*dt,.45);me.m=run?2:1}else me.m=0}
 function attack(){if(!locked||G.state!=='play'||!me.a||cd>0)return;
- vmK=1;if(me.role==='sheriff'){cd=CONFIG.shootCooldown;me.ry=yaw;G.net==='host'?doShoot(0,yaw):conn.send({t:'shoot',ry:yaw})}
- else if(me.role==='murderer'){cd=CONFIG.stabCooldown;me.ry=yaw;G.net==='host'?doStab(0,yaw):conn.send({t:'stab',ry:yaw})}}
+ vmK=1;if(me.role==='sheriff'){cd=CONFIG.shootCooldown;me.ry=yaw;G.net==='host'?doShoot(0,yaw,INTERP):rawSend(conn,J({t:'shoot',ry:yaw,ago:Math.min(400,INTERP+PING/2)}))}
+ else if(me.role==='murderer'){cd=CONFIG.stabCooldown;me.ry=yaw;G.net==='host'?doStab(0,yaw,INTERP):rawSend(conn,J({t:'stab',ry:yaw,ago:Math.min(400,INTERP+PING/2)}))}}
 function buildVM(role){
  if(VM)cam.remove(VM);VM=new THREE.Group();cam.add(VM);const v=CONFIG.viewmodel;
  if(role==='sheriff'){const bl=PR.blaster?PR.blaster.scene.clone(true):new THREE.Mesh(new THREE.BoxGeometry(.1,.12,.4),mat(0x222222));const w=new THREE.Group();w.add(bl);bl.scale.setScalar(PR.blaster?v.scale:1);w.rotation.y=PR.blaster?v.yaw:0;w.position.set(v.pos[0],v.pos[1],v.pos[2]);VM.add(w)}
@@ -384,12 +474,12 @@ function updateCam(dt){
  const alive=me.a,run=me.m===2,lv=V.p[me.id];if(lv)lv.g.visible=!alive;
  if(alive){bob+=dt*(me.m?(run?11:7.5):0);cam.position.set(me.x,1.62+(me.m?Math.sin(bob)*.045*(run?1.4:1):0),me.z);cam.rotation.set(pitch,yaw+Math.PI,0)}
  else{const fx=Math.sin(yaw),fz=Math.cos(yaw);cam.position.set(me.x-fx*3,2.4,me.z-fz*3);cam.lookAt(me.x,.4,me.z)}
- const tf=run&&alive?83:75;if(Math.abs(cam.fov-tf)>.05){cam.fov+=(tf-cam.fov)*Math.min(1,dt*8);cam.updateProjectionMatrix()}
+ const tf=SET.fov+(run&&alive?8:0);if(Math.abs(cam.fov-tf)>.05){cam.fov+=(tf-cam.fov)*Math.min(1,dt*8);cam.updateProjectionMatrix()}
  if(SKY)SKY.position.copy(cam.position);sun.position.set(me.x+35,70,me.z+25);sun.target.position.set(me.x,0,me.z);sun.target.updateMatrixWorld();
  if(VM){VM.visible=!!alive&&G.state==='play';vmK=Math.max(0,vmK-dt*5);const kk=vmK*vmK;
   if(me.role==='murderer'){VM.position.set(-kk*.22,Math.sin(bob*.5)*.008,-kk*.38);VM.rotation.z=kk*.9}
   else{VM.position.set(0,Math.sin(bob*.5)*.008,kk*.1);VM.rotation.x=kk*.18}}}
-function hud(dt){$('civs').textContent=civLeft;$('conn').textContent=G.test?'🧪 Test mode (offline)':G.net==='host'?'● Hosting · '+players.size+' player(s)':'● Connected to host';
+function hud(dt){$('civs').textContent=civLeft;$('conn').textContent=G.test?'🧪 Test mode (offline)':G.net==='host'?'● Hosting · '+players.size+' player(s)':'● Connected · '+Math.round(PING)+' ms';
  if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').textContent=''}$('lock').style.display=(!locked&&G.state==='play')?'block':'none';
  if(me&&!me.a&&G.state==='play')$('role').textContent='💀 YOU ARE DEAD'}
 // ===================== TEST: MODEL VIEWER =====================
@@ -418,16 +508,26 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
 
  if(G.state==='play'||G.state==='over'){
   if(G.state==='play'){moveMe(dt);acc+=dt;
-   if(G.net==='host'){simCivs(dt);syncHost();if(acc>=1/30){acc=0;bcast(snap())}}
-   else if(acc>=1/30&&conn&&conn.open){acc=0;conn.send({t:'in',x:me.x,z:me.z,ry:me.ry,m:me.m})}}
+   if(G.net==='host'){let n=0;while(acc>=TICK&&n++<3){acc-=TICK;hostTick()}if(acc>=TICK)acc=0}
+   else{if(acc>=TICK){acc%=TICK;sendInput()}
+    if((pingT-=dt)<=0){pingT=2;const b=new ArrayBuffer(5),dv=new DataView(b);dv.setUint8(0,3);dv.setUint32(1,performance.now()>>>0);rawSend(conn,b)}}}
   V.c.forEach(e=>updEnt(e,dt,false));for(const id in V.p)updEnt(V.p[id],dt,!!V.p[id].local);
   fxs=fxs.filter(f=>{f.t-=dt;if(f.t<=0){scene.remove(f.o);return false}return true});updateCam(dt);hud(dt)}
  renderer.render(scene,cam)}
 // ===================== INPUT / UI =====================
 addEventListener('keydown',e=>{keys[e.code]=true});addEventListener('keyup',e=>{keys[e.code]=false});
-document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===$('c')});
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===$('c');if(locked)$('pause').classList.remove('on');else if(G.state==='play')openSettings(false)});
+function syncSetUI(){$('sens').value=SET.sens;$('sensV').textContent=(+SET.sens).toFixed(1);$('fovR').value=SET.fov;$('fovV').textContent=SET.fov;$('qual').value=SET.quality;$('flashC').checked=SET.flash;
+ $('tDay').style.outline=SET.time==='day'?'2px solid #fff':'none';$('tNight').style.outline=SET.time==='night'?'2px solid #fff':'none'}
+function openSettings(fromMenu){syncSetUI();G.setMenu=!!fromMenu;$('bLeave').style.display=fromMenu?'none':'';$('bResume').textContent=fromMenu?'Close':'Resume';$('pTitle').textContent=fromMenu?'Settings':'Paused';$('pause').classList.add('on')}
+$('tDay').onclick=()=>{SET.time='day';saveSet();applyTime();syncSetUI()};$('tNight').onclick=()=>{SET.time='night';saveSet();applyTime();syncSetUI()};
+$('sens').oninput=()=>{SET.sens=+$('sens').value;saveSet();syncSetUI()};$('fovR').oninput=()=>{SET.fov=+$('fovR').value;saveSet();syncSetUI()};
+$('qual').onchange=()=>{SET.quality=$('qual').value;saveSet();applyQuality()};$('flashC').onchange=()=>{SET.flash=$('flashC').checked;saveSet();applyTime()};
+$('bResume').onclick=()=>{$('pause').classList.remove('on');if(G.state==='play'&&!G.setMenu&&$('c').requestPointerLock)$('c').requestPointerLock()};
+$('bLeave').onclick=()=>{$('pause').classList.remove('on');fail('You left the game.')};$('bSet').onclick=()=>openSettings(true);
+addEventListener('keydown',e=>{if(e.code==='KeyF'&&G.state==='play'&&!e.repeat){SET.flash=!SET.flash;saveSet();applyTime();toast('Flashlight '+(SET.flash?'on (night only)':'off'))}});
 addEventListener('wheel',e=>{if(G.state==='view')vd=Math.max(1.5,Math.min(60,vd*(1+e.deltaY*.001)))});
-addEventListener('mousemove',e=>{if(G.state==='view'&&e.buttons&1){vyaw-=e.movementX*.01;vpitch=Math.max(-.1,Math.min(1.4,vpitch+e.movementY*.01))}if(!locked)return;yaw-=e.movementX*.0025;pitch=Math.max(-1.4,Math.min(1.4,pitch-e.movementY*.002))});
+addEventListener('mousemove',e=>{if(G.state==='view'&&e.buttons&1){vyaw-=e.movementX*.01;vpitch=Math.max(-.1,Math.min(1.4,vpitch+e.movementY*.01))}if(!locked)return;yaw-=e.movementX*.0025*SET.sens;pitch=Math.max(-1.4,Math.min(1.4,pitch-e.movementY*.002*SET.sens))});
 $('c').addEventListener('mousedown',()=>{if(G.state!=='play')return;if(!locked){$('c').requestPointerLock&&$('c').requestPointerLock();return}attack()});
 $('bHost').onclick=hostGame;$('bJoin').onclick=()=>joinGame($('code').value);
 $('bStart').onclick=()=>startGame();$('bView').onclick=openViewer;$('bSbS').onclick=()=>sandbox('sheriff');$('bSbM').onclick=()=>sandbox('murderer');
@@ -458,7 +558,7 @@ async function pickFiles(files){
 $('bClr').onclick=clearSaved;$('bPick').onclick=()=>$('fpick').click();$('bPick2').onclick=()=>$('fpick').click();$('fpick').onchange=e=>pickFiles([...e.target.files]);
 (async()=>{
  if(!window.Peer||!window.THREE||!THREE.GLTFLoader){$('menuErr').textContent='Failed to load libraries (check your internet connection).'}
- await restoreLocal();await loadAll();
+ await restoreLocal();await loadAll();applyQuality();syncSetUI();
  $('bHost').disabled=$('bJoin').disabled=!window.Peer;$('bView').disabled=$('bSbS').disabled=$('bSbM').disabled=false;
  const room=new URLSearchParams(location.search).get('room');if(room&&window.Peer){$('code').value=room;joinGame(room)}
  requestAnimationFrame(loop)})();
