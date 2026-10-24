@@ -16,18 +16,19 @@ button{cursor:pointer;background:#c0392b;border-color:#e74c3c;font-weight:600}bu
 #cross{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;background:#fffd;box-shadow:0 0 0 2px #0006;border-radius:50%}
 #toast{position:absolute;top:70px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:700;text-shadow:0 2px 6px #000;text-align:center}
 #lock{position:absolute;top:42%;width:100%;text-align:center;font-size:20px;text-shadow:0 2px 8px #000}
-#viewer{position:fixed;inset:0;display:none;pointer-events:none;z-index:4}#viewer>*{pointer-events:auto}#vp{position:absolute;top:12px;left:12px;width:250px;max-height:94vh;overflow:auto;background:#000b;border-radius:10px;padding:10px}#vp button{margin:3px 0;padding:6px 10px;font-size:13px;text-align:left}#vp button.bad{background:#552}#vh{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#0009;padding:8px 14px;border-radius:10px;font-size:13px}#vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}input[type=range]{padding:0}.role{font-weight:800;font-size:18px}.sheriff{color:#5aa9ff}.murderer{color:#ff5a5a}.civilian{color:#9fe3a1}
+#viewer{position:fixed;inset:0;display:none;pointer-events:none;z-index:4}#viewer>*{pointer-events:auto}#vp{position:absolute;top:12px;left:12px;width:250px;max-height:94vh;overflow:auto;background:#000b;border-radius:10px;padding:10px}#vp button{margin:3px 0;padding:6px 10px;font-size:13px;text-align:left}#vp button.bad{background:#552}#vh{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#0009;padding:8px 14px;border-radius:10px;font-size:13px}#vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}input[type=range]{padding:0}.role{font-weight:800;font-size:18px}.card{max-height:94vh;overflow:auto}.pl{display:flex;align-items:center;gap:8px;padding:5px 9px;margin:3px 0;background:#0d1020;border-radius:8px;font-size:13px}.pl b{flex:1}.pl .x{width:auto;margin:0;padding:2px 8px;font-size:12px}.ok{color:#8fd3a0}.warn{color:#ffd27a}.bad2{color:#ff7b6b}#tab{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:6;pointer-events:none}#tab .card{width:min(580px,94vw);background:#161a28ee}.tag{position:absolute;transform:translate(-50%,-100%);font-size:12px;font-weight:700;text-shadow:0 1px 3px #000;white-space:nowrap}#timer{font-weight:700}.sheriff{color:#5aa9ff}.murderer{color:#ff5a5a}.civilian{color:#9fe3a1}
 </style></head><body>
 <canvas id="c"></canvas>
 <div id="hud"><div id="vig"></div>
  <div class="p" id="tl"><div class="role" id="role"></div><div id="obj"></div></div>
- <div class="p" id="tr"><div>Civilians left: <b id="civs">0</b></div><div id="conn"></div></div>
- <div id="cross"></div><div id="toast"></div><div id="lock">Click to play · WASD move · Shift run · Click attack</div>
- <div class="p" id="bt">WASD move · Shift run · Click attack · Esc releases the mouse</div>
+ <div class="p" id="tr"><div>Civilians left: <b id="civs">0</b></div><div id="mleft"></div><div id="timer"></div><div id="conn"></div></div>
+ <div id="tags"></div><div id="cross"></div><div id="toast"></div><div id="lock">Click to play · WASD move · Shift run · Click attack</div>
+ <div class="p" id="bt">WASD move · Shift run · Click attack · Tab = player list · Esc releases the mouse</div>
 </div>
+<div id="tab"><div class="card"><h2>Players</h2><div id="tabL"></div><div class="sub" id="tabF"></div></div></div>
 <div id="viewer"><div id="vp"><b>Model Viewer</b><div class="sub" id="vinfo"></div><div class="row"><button class="alt" onclick="setAnim(0)">Idle</button><button class="alt" onclick="setAnim(1)">Walk</button><button class="alt" onclick="setAnim(2)">Run</button></div><div id="vl"></div><button class="alt" id="bPick2">📂 Load .glb files…</button><button onclick="closeViewer()">← Back to menu</button></div><div id="vh">Drag = orbit · Wheel = zoom · ←/→ = next/prev item · 1/2/3 = idle/walk/run</div></div>
 <div class="scr on" id="menu"><div class="card">
- <h1>🔪 Hide &amp; Seek Murder Mystery</h1><p class="sub">3D · peer-to-peer multiplayer · no server needed</p>
+ <h1>🔪 Hide &amp; Seek Murder Mystery</h1><p class="sub">3D · peer-to-peer multiplayer · no server needed</p><input id="pname" maxlength="14" placeholder="Your name">
  <button id="bHost" disabled>Host Game</button>
  <div class="row"><input id="code" placeholder="Room code / invite link"><button class="alt" id="bJoin" disabled>Join</button></div>
  <div class="row"><button class="alt" id="bView" disabled>🧪 Model Viewer</button></div><div class="row"><button class="alt" id="bSbS" disabled>🧪 Sandbox: Sheriff</button><button class="alt" id="bSbM" disabled>🧪 Sandbox: Murderer</button></div><div class="row"><button class="alt" id="bPick">📂 Load models from your computer (.glb)</button></div><div class="row"><button class="alt" id="bClr" style="font-size:12px;padding:6px">Forget saved models</button></div><div class="row"><button class="alt" id="bSet">⚙ Settings (day / night, graphics)</button></div><input type="file" id="fpick" multiple accept=".glb" style="display:none"><div class="err" id="menuErr"></div><pre id="diag" style="color:#ffd27a;font-size:11px;white-space:pre-wrap;word-break:break-all;margin:6px 0 0"></pre><div class="stat" id="load">Loading models…</div>
@@ -35,6 +36,10 @@ button{cursor:pointer;background:#c0392b;border-color:#e74c3c;font-weight:600}bu
 <div class="scr" id="lobby"><div class="card">
  <h2>Lobby</h2><p class="sub">Players connected: <b id="lp">1</b> · AI civilians: <b id="lc">30</b></p>
  <label class="sub">Map</label><select id="mapSel"></select><div class="sub" id="mapName" style="display:none"></div>
+ <label class="sub">Players &amp; model download status</label><div id="roster"></div>
+ <label class="sub">NPC civilians: <b id="npcV"></b> <span style="opacity:.6">(more = harder to find murderers, heavier on slow PCs)</span></label><input type="range" id="npcN" min="5" max="200" step="5">
+ <div class="row"><div><label class="sub">Round timer</label><select id="rTime"><option value="0">Off</option><option value="3">3 min</option><option value="5">5 min</option><option value="8">8 min</option><option value="12">12 min</option></select></div><div><label class="sub">Sheriff mistakes allowed</label><select id="rStr"><option value="0">0 (instant loss)</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div></div>
+ <label class="sub"><input type="checkbox" id="rPing" style="width:auto;margin-right:8px">Sheriff sees a ⚠ marker where a murder happens</label>
  <div id="inv"><label class="sub">Invite link</label><div class="row"><input id="link" readonly><button class="alt" id="bCopy">Copy Invite Link</button></div></div>
  <button id="bStart">Start Game (need 2+ players)</button><div class="err" id="lobErr"></div><div class="stat" id="lobStat"></div>
 </div></div>
@@ -68,7 +73,7 @@ const CONFIG={
   spawn:{sheriffWithCrowd:false}, // true = Sheriff also starts in the crowd
   githubRepo:'',              // optional 'user/repo' if not on github.io
   charYawOffset:0,            // adjust if your character models face the wrong way (radians)
-  scaling:{baseCivilians:20,perPlayer:10,maxPlayers:6},
+  scaling:{baseCivilians:20,perPlayer:10,maxPlayers:8},
   speeds:{walk:2.6,run:5.5,civWalk:2.4,civPanic:5.6},
   panicSeconds:3,shotPanicRadius:28,killPanicRadius:16,shootCooldown:1.1,stabCooldown:.7
 };
@@ -119,14 +124,14 @@ const MAPS={
 };
 // ===================== GLOBALS =====================
 const $=id=>document.getElementById(id);
-const G={state:'menu',map:'suburb',net:null,civTotal:0};
+const G={state:'menu',map:'suburb',net:null,civTotal:0};const ROOM={npcs:40,time:8,strikes:0,ping:1};let ROSTER=[],STK=0,PINGS=[],tabT=0;const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let peer=null,conn=null,players=new Map(),nextId=1,me=null,C=[],V={c:[],p:{}},R=[],MW=100,MD=100,CH={},PR={},sheriffId=-1,roomCode='';
 const keys={};let yaw=0,pitch=0,locked=false,cd=0,fxs=[],ac=null,toastT=0,civLeft=0;
 // ===================== THREE SETUP =====================
 const renderer=new THREE.WebGLRenderer({canvas:$('c'),antialias:true});renderer.outputEncoding=THREE.sRGBEncoding;renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
 const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(75,1,.05,1100),worldG=new THREE.Group(),entG=new THREE.Group();scene.add(worldG,entG,cam);cam.rotation.order='YXZ';
 const hemi=new THREE.HemisphereLight(0xdfeeff,0x667755,.85),sun=new THREE.DirectionalLight(0xfff2dd,1.1);sun.position.set(40,80,30);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-45,right:45,top:45,bottom:-45,near:1,far:220});sun.shadow.bias=-.0004;scene.add(hemi,sun,sun.target);let SKY=null,VM=null,vmK=0,bob=0,WORLD=null,LAMPN=0,GLOWT=null,GLOWM=null;
-const SET={time:'day',sens:1,fov:75,quality:'high',flash:true};
+const SET={time:'day',sens:1,fov:75,quality:'high',flash:true,name:''};
 try{Object.assign(SET,JSON.parse(localStorage.getItem('hsmm')||'{}'))}catch(e){}
 const saveSet=()=>{try{localStorage.setItem('hsmm',JSON.stringify(SET))}catch(e){}};
 const flash=new THREE.SpotLight(0xfff0d0,0,45,.55,.6,1.4);cam.add(flash,flash.target);flash.target.position.set(0,0,-5);
@@ -303,7 +308,7 @@ function onEvent(ev){
  if(ev.k==='shot'){const dx=Math.sin(ev.ry),dz=Math.cos(ev.ry),p=[new THREE.Vector3(ev.x,1.2,ev.z),new THREE.Vector3(ev.x+dx*ev.len,1.2,ev.z+dz*ev.len)];
   const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(p),new THREE.LineBasicMaterial({color:0x66ccff}));scene.add(l);fxs.push({o:l,t:.15});beep(180,.2,'sawtooth')}
  else if(ev.k==='stab'){const e=V.p[ev.id];if(e)e.kt=.35;beep(90,.15,'triangle')}
- else if(ev.k==='kill'){if(ev.p!==undefined&&ev.p===me.id){me.a=0;toast('You were killed!')}else toast(ev.msg||'Someone was killed!');beep(60,.4,'sawtooth')}
+ else if(ev.k==='kill'){if(ev.p!==undefined&&ev.p===me.id){me.a=0;toast('You were killed!')}else toast(ev.msg||'Someone was killed!');if(ev.x!==undefined&&me&&me.role==='sheriff')PINGS.push({x:ev.x,z:ev.z,t:7});beep(60,.4,'sawtooth')}
 }
 // ===================== NETWORK =====================
 const J=JSON.stringify,TAU=Math.PI*2,TICK=1/CONFIG.net.tick,INTERP=CONFIG.net.interp,MCH=16000;
@@ -323,18 +328,29 @@ async function sendModels(p,names){const c=p.conn,list=names.filter(n=>modelBuf(
  send(p.id,{t:'mdone'})}
 function missingModels(){const o=new Set();['sheriff','murderer','civilian'].forEach(k=>{if(!CH[k])o.add(bkey(CONFIG.models[k]))});if(!PR.blaster)o.add(bkey(CONFIG.models.blaster));for(const k in CONFIG.models.props)if(!PR[k])o.add(bkey(CONFIG.models.props[k]));return[...o]}
 function show(id){$('pause').classList.remove('on');['menu','lobby','over'].forEach(s=>$(s).classList.toggle('on',s===id));$('hud').style.display=id?'none':'block'}
-function fail(msg){G.state='menu';G.test=0;if(peer){try{peer.destroy()}catch(e){}}peer=conn=null;players=new Map();document.exitPointerLock&&document.exitPointerLock();show('menu');$('menuErr').textContent=msg;$('bHost').disabled=$('bJoin').disabled=false}
-function civCount(n){return CONFIG.scaling.baseCivilians+CONFIG.scaling.perPlayer*n}
-function lobbyUI(n,map){$('lp').textContent=n;$('lc').textContent=civCount(n);$('mapName').textContent='Map: '+MAPS[map].name;$('mapSel').value=map;const wait=G.net==='host'&&[...players.values()].some(p=>!p.ready);$('bStart').disabled=G.net==='host'?(n<2||wait):true;if(wait)$('lobStat').textContent='Waiting for a player to finish loading models…'}
-function lobbyBcast(){lobbyUI(players.size,G.map);bcast({t:'lobby',n:players.size,map:G.map})}
+function fail(msg){G.state='menu';G.test=0;ROSTER=[];G.tEnd=0;showTab(0);if(peer){try{peer.destroy()}catch(e){}}peer=conn=null;players=new Map();document.exitPointerLock&&document.exitPointerLock();show('menu');$('menuErr').textContent=msg;$('bHost').disabled=$('bJoin').disabled=false}
+function civCount(n){return ROOM.npcs}
+const myName=()=>($('pname').value||'').replace(/[<>&"]/g,'').trim().slice(0,14);
+const nameOf=id=>{const r=ROSTER.find(q=>q.id===id);return r?r.nm:'Player '+(id+1)};
+function modelTotal(){return new Set([...['sheriff','murderer','civilian'].map(k=>bkey(CONFIG.models[k])),bkey(CONFIG.models.blaster),...Object.values(CONFIG.models.props).map(bkey)]).size}
+function sendMS(st,pct){if(!conn||!conn.open)return;const m=missingModels();rawSend(conn,J({t:'ms',st:st&&st!=='ok'?st:(m.length?'miss':'ok'),miss:m.length,tot:modelTotal(),pct:pct||0}))}
+function msSelf(){const m=missingModels();return{st:m.length?'miss':'ok',miss:m.length,tot:modelTotal(),pct:0}}
+function rosterList(){return[...players.values()].map(p=>({id:p.id,nm:p.id===0?(myName()||'Host'):p.name||'Player '+(p.id+1),a:p.a?1:0,k:p.k||0,pg:p.id===0?0:Math.round(p.pg||0),ms:p.id===0?msSelf():p.ms||{st:'dl',pct:0,miss:0,tot:0}}))}
+const msTxt=s=>s.st==='ok'?'<span class="ok">✔ models</span>':s.st==='dl'?'<span class="warn">⬇ '+(s.pct|0)+'%</span>':'<span class="bad2" title="Placeholder shapes are used for missing models">✖ '+s.miss+'/'+s.tot+' missing</span>';
+function renderRoster(){const host=G.net==='host',my=host?0:me&&me.id;$('roster').innerHTML=ROSTER.map(r=>'<div class="pl"><b>'+(r.id===0?'👑 ':'')+esc(r.nm)+(r.id===my?' (you)':'')+'</b>'+msTxt(r.ms)+(r.id===0?'':'<span style="opacity:.6">'+r.pg+'ms</span>')+(host&&r.id!==0?'<button class="x" data-k="'+r.id+'">Kick</button>':'')+'</div>').join('')}
+function kick(id){const p=players.get(id);if(!p)return;send(id,{t:'kick'});setTimeout(()=>{try{p.conn.close()}catch(e){}},300);drop(id)}
+function lobbyUI(n,map){const hst=G.net==='host';if(hst)ROSTER=rosterList();$('lp').textContent=n;$('lc').textContent=ROOM.npcs;$('mapName').textContent='Map: '+MAPS[map].name;$('mapSel').value=map;
+ $('npcN').value=ROOM.npcs;$('npcV').textContent=ROOM.npcs;$('rTime').value=ROOM.time;$('rStr').value=ROOM.strikes;$('rPing').checked=!!ROOM.ping;['npcN','rTime','rStr','rPing'].forEach(i=>$(i).disabled=!hst);renderRoster();
+ const wait=hst&&[...players.values()].some(p=>!p.ready);$('bStart').disabled=hst?(n<2||wait):true;if(wait)$('lobStat').textContent='Waiting for a player to finish loading models…'}
+function lobbyBcast(){lobbyUI(players.size,G.map);bcast({t:'lobby',n:players.size,map:G.map,room:ROOM,r:ROSTER})}
 function hostGame(){
  G.net='host';$('menuErr').textContent='';$('bHost').disabled=$('bJoin').disabled=true;
  const mk=()=>{roomCode='hsmm-'+Math.random().toString(36).slice(2,8);peer=new Peer(roomCode);
-  peer.on('open',id=>{G.state='lobby';players=new Map([[0,{id:0,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian',ready:true}]]);nextId=1;
+  peer.on('open',id=>{G.state='lobby';players=new Map([[0,{id:0,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian',ready:true,k:0}]]);nextId=1;
    const u=new URL(location.href);u.search='';u.hash='';$('link').value=u.toString()+'?room='+id;$('inv').style.display='';$('mapSel').style.display='';$('mapName').style.display='none';$('lobErr').textContent='';$('lobStat').textContent='Waiting for players… share the invite link.';lobbyUI(1,G.map);show('lobby')});
   peer.on('connection',c=>{
    if(G.state!=='lobby'||players.size>=CONFIG.scaling.maxPlayers){c.on('open',()=>{try{c.send(J({t:'full'}))}catch(e){}setTimeout(()=>c.close(),400)});return}
-   const id=nextId++;c.on('open',()=>{players.set(id,{id,conn:c,x:0,z:0,ry:0,m:0,a:1,role:'civilian',ready:false});c.send(J({t:'hello',id}));lobbyBcast()});
+   const id=nextId++;c.on('open',()=>{players.set(id,{id,conn:c,x:0,z:0,ry:0,m:0,a:1,role:'civilian',ready:false,k:0,name:'Player '+(id+1),ms:{st:'dl',pct:0,miss:0,tot:0}});c.send(J({t:'hello',id}));lobbyBcast()});
    c.on('data',d=>onHostData(id,d));c.on('close',()=>drop(id));c.on('error',()=>drop(id))});
   peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
   peer.on('error',e=>{if(e.type==='unavailable-id'){try{peer.destroy()}catch(x){}mk()}else if(G.state==='menu'||!G.state)fail('Network error: '+e.type);else $('lobErr').textContent='Network issue: '+e.type})};
@@ -342,7 +358,7 @@ function hostGame(){
 }
 function drop(id){const p=players.get(id);if(!p)return;players.delete(id);
  if(G.state==='lobby')lobbyBcast();
- else if(G.state==='play'){if(p.role==='murderer')over('sheriff','The Murderer left the game.');else if(p.role==='sheriff')over('murderer','The Sheriff left the game.')}}
+ else if(G.state==='play'){const e=V.p[id];if(e)e.g.visible=false;if(p.role==='sheriff')over('murderer','The Sheriff left the game.');else if(![...players.values()].some(q=>q.role==='murderer'&&q.a))over('sheriff','Every Murderer left or was caught.')}}
 function joinGame(raw){
  let code=raw.trim();try{const u=new URL(code);code=u.searchParams.get('room')||code}catch(e){}
  if(!code){$('menuErr').textContent='Enter a room code or invite link.';return}
@@ -351,7 +367,7 @@ function joinGame(raw){
  try{peer=new Peer()}catch(e){return fail('Could not start networking.')}
  const to=setTimeout(()=>{if(!opened)fail('Could not reach the host (timed out).')},12000);
  peer.on('open',()=>{conn=peer.connect(code,{reliable:false,serialization:'raw'});
-  conn.on('open',()=>{opened=true;clearTimeout(to);G.state='lobby';$('inv').style.display='none';$('mapSel').style.display='none';$('mapName').style.display='';$('lobStat').textContent='Connected! Waiting for the host to start…';$('lobErr').textContent='';$('load').textContent='';show('lobby');const miss=missingModels();if(miss.length){$('lobStat').textContent='Requesting missing models from the host…';rawSend(conn,J({t:'needm',names:miss}))}else rawSend(conn,J({t:'ready'}))});
+  conn.on('open',()=>{opened=true;clearTimeout(to);G.state='lobby';$('inv').style.display='none';$('mapSel').style.display='none';$('mapName').style.display='';$('lobStat').textContent='Connected! Waiting for the host to start…';$('lobErr').textContent='';$('load').textContent='';show('lobby');rawSend(conn,J({t:'join',name:myName()}));sendMS(missingModels().length?'dl':'ok');const miss=missingModels();if(miss.length){$('lobStat').textContent='Requesting missing models from the host…';rawSend(conn,J({t:'needm',names:miss}))}else rawSend(conn,J({t:'ready'}))});
   conn.on('data',onClientData);conn.on('close',()=>{if(G.state!=='menu')fail('Disconnected from host.')});conn.on('error',()=>fail('Connection error.'))});
  peer.on('error',e=>{clearTimeout(to);fail(e.type==='peer-unavailable'?'Room not found. Check the link/code.':'Network error: '+e.type)});
  peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
@@ -359,7 +375,7 @@ function joinGame(raw){
 function onHostData(id,d){const p=players.get(id);if(!p||d==null)return;
  if(typeof d==='string'){let m;try{m=JSON.parse(d)}catch(e){return}
   if(m.t==='shoot')doShoot(id,m.ry,m.ago);else if(m.t==='stab')doStab(id,m.ry,m.ago);
-  else if(m.t==='ready'){p.ready=true;lobbyBcast()}
+  else if(m.t==='join'){p.name=String(m.name||'').replace(/[<>&"]/g,'').trim().slice(0,14)||('Player '+(id+1));lobbyBcast()}else if(m.t==='ms'){p.ms={st:m.st==='ok'?'ok':m.st==='dl'?'dl':'miss',miss:m.miss|0,tot:m.tot|0,pct:m.pct|0};lobbyBcast()}else if(m.t==='pg'){p.pg=+m.v||0}else if(m.t==='ready'){p.ready=true;lobbyBcast()}
   else if(m.t==='needm'&&Array.isArray(m.names))sendModels(p,m.names.filter(x=>typeof x==='string').slice(0,16));return}
  const ab=toAB(d);if(!ab)return;const dv=new DataView(ab),t=dv.getUint8(0);
  if(t===1&&ab.byteLength>=7&&G.state==='play'&&p.a){let x=dv.getInt16(1)/100,z=dv.getInt16(3)/100;const now=performance.now();
@@ -377,18 +393,18 @@ async function onClientData(d){if(d==null)return;
   if(t===2)onSnapBin(dv);
   else if(t===4){const rtt=(performance.now()>>>0)-dv.getUint32(1);PING=PING?PING*.8+rtt*.2:rtt}
   else if(t===5&&MT){const ni=dv.getUint8(1),ci=dv.getUint16(2),u8=new Uint8Array(ab,4);if(!MT.bufs[ni])MT.bufs[ni]=new Uint8Array(MT.sizes[ni]);MT.bufs[ni].set(u8,ci*MCH);MT.recv+=u8.length;
-   $('lobStat').textContent='Downloading models from the host… '+Math.min(99,Math.round(MT.recv/MT.total*100))+'%'}
+   $('lobStat').textContent='Downloading models from the host… '+Math.min(99,Math.round(MT.recv/MT.total*100))+'%';const pc=Math.min(99,Math.round(MT.recv/MT.total*100));if(pc-(MT.lp||0)>=8){MT.lp=pc;sendMS('dl',pc)}}
   return}
  let m;try{m=JSON.parse(d)}catch(e){return}
  if(m.t==='hello')me={id:m.id};
  else if(m.t==='full')fail('The game is full or already started.');
- else if(m.t==='lobby'){if(G.state!=='play'){G.state='lobby';show('lobby')}lobbyUI(m.n,m.map)}
+ else if(m.t==='lobby'){if(G.state!=='play'){G.state='lobby';show('lobby')}Object.assign(ROOM,m.room||{});ROSTER=m.r||[];lobbyUI(m.n,m.map)}
  else if(m.t==='mh'){MT={names:m.names,sizes:m.sizes,bufs:[],recv:0,total:m.sizes.reduce((a,b)=>a+b,0)||1}}
  else if(m.t==='mdone'){if(MT){MT.names.forEach((n,i)=>{if(MT.bufs[i]){LOCAL[n]=MT.bufs[i].buffer;saveLocal(n,MT.bufs[i].buffer)}});MT=null;await loadAll()}
-  rawSend(conn,J({t:'ready'}));$('lobStat').textContent='Models ready. Waiting for the host to start…'}
+  sendMS();rawSend(conn,J({t:'ready'}));$('lobStat').textContent='Models ready. Waiting for the host to start…'}
  else if(m.t==='start'){G.map=m.map;lastSeq=-1;me={id:m.id,x:0,z:0,ry:0,m:0,a:1,role:m.role};const self=m.pl.find(q=>q[0]===m.id);me.x=self[1];me.z=self[2];
-  setupWorld(m.map,m.seed,m.n,m.sh,m.pl.map(q=>q[0]),m.id,m.role);beginPlay()}
- else if(m.t==='ev')onEvent(m.e);
+  ROSTER=m.r||[];G.tEnd=m.tm?performance.now()+m.tm*60000:0;PINGS=[];setupWorld(m.map,m.seed,m.n,m.sh,m.pl.map(q=>q[0]),m.id,m.role);beginPlay()}
+ else if(m.t==='ev')onEvent(m.e);else if(m.t==='roster')ROSTER=m.r;else if(m.t==='kick')fail('You were kicked by the host.');
  else if(m.t==='over')showOver(m)}
 function sendInput(){if(!conn||!conn.open)return;const q=[Math.round(me.x*100),Math.round(me.z*100),Math.round(((me.ry%TAU+TAU)%TAU)/TAU*256)&255,me.m],now=performance.now();
  if(q.every((v,i)=>v===lastIn[i])&&now-lastInT<1000)return;lastIn=q;lastInT=now;
@@ -397,16 +413,16 @@ function sendInput(){if(!conn||!conn.open)return;const q=[Math.round(me.x*100),M
 // ===================== HOST GAME LOGIC =====================
 function startGame(test){
  if(!test&&(G.net!=='host'||players.size<2||G.state!=='lobby'))return;
- const ids=test?(test==='sheriff'?[0,1]:[1,0]):[...players.keys()].sort(()=>Math.random()-.5);players.forEach(p=>{p.role='civilian';p.a=1;p.m=0});
- players.get(ids[0]).role='sheriff';players.get(ids[1]).role='murderer';
+ const ids=test?(test==='sheriff'?[0,1]:[1,0]):[...players.keys()].sort(()=>Math.random()-.5);players.forEach(p=>{p.role='murderer';p.a=1;p.m=0;p.k=0});STK=0;PINGS=[];
+ players.get(ids[0]).role='sheriff';
  const n=civCount(players.size),seed=Math.random()*1e9|0;me=players.get(0);
  setupWorld(G.map,seed,n,ids[0],[...players.keys()],0,me.role);
  const M=MAPS[G.map];let sk=0;const crowd=()=>{const i=sk++,r=.8*Math.sqrt(i+1),a=i*2.4;return resolve(M.crowd[0]+Math.cos(a)*r,M.crowd[1]+Math.sin(a)*r,.5)};
  C=[];for(let i=0;i<n;i++){const[x,z]=crowd(),[tx,tz]=freePoint(.8);C.push({x,z,ry:Math.random()*6.28,m:0,a:1,tx,tz,wait:Math.random()*5,panic:0,sx:0,sz:0,stuck:0})}
  players.forEach(p=>{p.lt=0;const alone=p.role==='sheriff'&&!CONFIG.spawn.sheriffWithCrowd;[p.x,p.z]=alone?resolve(M.sheriffAt[0],M.sheriffAt[1],.5):crowd()});
  HIST=[];LQ=[];tickN=0;seqN=0;lastSentLeft=-1;
- const pl=[...players.values()].map(q=>[q.id,q.x,q.z]);
- players.forEach(p=>{if(p.conn)send(p.id,{t:'start',map:G.map,seed,n,sh:ids[0],pl,role:p.role,id:p.id})});
+ G.tEnd=ROOM.time?performance.now()+ROOM.time*60000:0;ROSTER=rosterList();const pl=[...players.values()].map(q=>[q.id,q.x,q.z]);
+ players.forEach(p=>{if(p.conn)send(p.id,{t:'start',map:G.map,seed,n,sh:ids[0],pl,role:p.role,id:p.id,tm:ROOM.time,r:ROSTER})});
  beginPlay();
 }
 function panicAt(x,z,r,skip){for(const c of C){if(c.a&&c!==skip&&Math.hypot(c.x-x,c.z-z)<r){c.panic=CONFIG.panicSeconds;c.sx=x;c.sz=z}}}
@@ -420,7 +436,7 @@ function simCivs(dt){
   if(mv<sp*dt*.3){c.stuck+=dt;if(c.stuck>.5){c.stuck=0;if(c.panic>0){c.sx=c.x+(Math.random()-.5)*14;c.sz=c.z+(Math.random()-.5)*14}else[c.tx,c.tz]=freePoint(.8)}}else c.stuck=0}
 }
 function syncHost(){const now=performance.now();C.forEach((c,i)=>pushS(V.c[i],now,c.x,c.z,c.ry,c.m,c.a?1:0));players.forEach(p=>{if(p.id!==0)pushS(V.p[p.id],now,p.x,p.z,p.ry,p.m,p.a?1:0)});civLeft=C.filter(c=>c.a).length}
-function hostTick(){simCivs(TICK);syncHost();
+function hostTick(){simCivs(TICK);syncHost();if(G.tEnd&&performance.now()>G.tEnd)return over('sheriff','Time ran out - the Murderers failed to finish the job.');if(tickN%40===0){ROSTER=rosterList();bcast({t:'roster',r:ROSTER})}
  const hc=new Float32Array(C.length*2);C.forEach((c,i)=>{hc[i*2]=c.x;hc[i*2+1]=c.z});const hp={};players.forEach(p=>{hp[p.id]=[p.x,p.z]});HIST.push({t:performance.now(),c:hc,p:hp});if(HIST.length>12)HIST.shift();
  tickN++;const full=tickN%CONFIG.net.tick===1,ch=[];
  const chk=(id,x,z,ry,m,a)=>{const q=LQ[id]||(LQ[id]=[NaN,0,0,0]),xi=Math.round(x*100),zi=Math.round(z*100),ri=Math.round(((ry%TAU+TAU)%TAU)/TAU*256)&255,f=m|(a<<2);
@@ -439,24 +455,24 @@ function doShoot(id,ry,ago){const p=players.get(id);if(!p||!p.a||p.role!=='sheri
  for(const t of targets(id,ago)){const rx=t.x-p.x,rz=t.z-p.z,d=rx*dx+rz*dz;if(d<0||d>mt)continue;if(Math.abs(rx*dz-rz*dx)<.7&&(!best||d<best.d))best={d,t}}
  emit({k:'shot',x:p.x,z:p.z,ry,len:best?best.d:mt});panicAt(p.x,p.z,CONFIG.shotPanicRadius);
  if(!best)return;
- if(best.t.civ){best.t.c.a=0;emit({k:'kill',msg:'The Sheriff shot an innocent civilian!'});over('murderer','The Sheriff shot an innocent civilian!')}
- else{best.t.p.a=0;emit({k:'kill',p:best.t.p.id,msg:'A player was shot!'});if(best.t.p.role==='murderer')over('sheriff','The Sheriff took down the Murderer!');else over('murderer','The Sheriff shot an innocent player!')}}
+ if(best.t.civ){best.t.c.a=0;STK++;panicAt(best.t.x,best.t.z,CONFIG.killPanicRadius);civLeft=C.filter(c=>c.a).length;emit({k:'kill',msg:'The Sheriff shot an innocent civilian!'+(STK<=ROOM.strikes?' Mistakes left: '+(ROOM.strikes-STK):'')});if(STK>ROOM.strikes)over('murderer','The Sheriff shot too many innocent civilians!');else if(civLeft<=0)over('murderer','Every civilian is dead!')}
+ else{best.t.p.a=0;emit({k:'kill',p:best.t.p.id,msg:'A Murderer was shot!'});ROSTER=rosterList();bcast({t:'roster',r:ROSTER});if(![...players.values()].some(q=>q.role==='murderer'&&q.a))over('sheriff','The Sheriff took down every Murderer!')}}
 function doStab(id,ry,ago){const p=players.get(id);if(!p||!p.a||p.role!=='murderer'||G.state!=='play'||!isFinite(ry))return;
  const dx=Math.sin(ry),dz=Math.cos(ry);emit({k:'stab',id});let best=null;
- for(const t of targets(id,ago)){const rx=t.x-p.x,rz=t.z-p.z,d=Math.hypot(rx,rz);if(d>2.4)continue;if(d>.3&&(rx*dx+rz*dz)/d<.2)continue;if(wallT(p.x,p.z,rx/(d||1),rz/(d||1),d)<d-.2)continue;if(!best||d<best.d)best={d,t}}
+ for(const t of targets(id,ago)){if(!t.civ)continue;const rx=t.x-p.x,rz=t.z-p.z,d=Math.hypot(rx,rz);if(d>2.4)continue;if(d>.3&&(rx*dx+rz*dz)/d<.2)continue;if(wallT(p.x,p.z,rx/(d||1),rz/(d||1),d)<d-.2)continue;if(!best||d<best.d)best={d,t}}
  if(!best)return;
- if(best.t.civ){best.t.c.a=0;emit({k:'kill',msg:'Someone was murdered!'});panicAt(best.t.x,best.t.z,CONFIG.killPanicRadius);civLeft=C.filter(c=>c.a).length;if(civLeft<=0)over('murderer','The Murderer eliminated every civilian!')}
- else{best.t.p.a=0;emit({k:'kill',p:best.t.p.id,msg:'A player was murdered!'});if(best.t.p.role==='sheriff')over('murderer','The Murderer killed the Sheriff!')}}
+ if(best.t.civ){best.t.c.a=0;p.k=(p.k||0)+1;emit({k:'kill',msg:'Someone was murdered!',x:ROOM.ping?best.t.x:undefined,z:ROOM.ping?best.t.z:undefined});panicAt(best.t.x,best.t.z,CONFIG.killPanicRadius);civLeft=C.filter(c=>c.a).length;if(civLeft<=0)over('murderer','The Murderers eliminated every civilian!')}
+ }
 function sandbox(role){G.net='host';G.test=role;G.state='lobby';players=new Map([[0,{id:0,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian'}],[1,{id:1,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian'}]]);startGame(role);toast('Sandbox: the other player is a motionless dummy')}
-function over(win,why){if(G.state!=='play')return;let m=-1;players.forEach(p=>{if(p.role==='murderer')m=p.id});const msg={t:'over',win,why,m,sh:sheriffId};bcast(msg);showOver(msg)}
-function showOver(d){G.state='over';document.exitPointerLock&&document.exitPointerLock();
+function over(win,why){if(G.state!=='play')return;const msg={t:'over',win,why,sh:sheriffId,r:rosterList()};bcast(msg);showOver(msg)}
+function showOver(d){G.state='over';showTab(0);document.exitPointerLock&&document.exitPointerLock();
  const myWin=(d.win==='murderer')===(me.role==='murderer');$('oT').textContent=d.win==='murderer'?'🔪 Murderer Wins':'⭐ Sheriff Wins';$('oW').textContent=d.why;
- $('oR').innerHTML='You were '+(me.role==='murderer'?'the <b class="murderer">Murderer</b>':me.role==='sheriff'?'the <b class="sheriff">Sheriff</b>':'a <b class="civilian">Civilian</b>')+' — <b>'+(myWin?'You win!':'You lose.')+'</b><br>Murderer: Player '+(d.m+1);
+ $('oR').innerHTML='You were '+(me.role==='sheriff'?'the <b class="sheriff">Sheriff</b>':'a <b class="murderer">Murderer</b>')+' — <b>'+(myWin?'You win!':'You lose.')+'</b><br>'+(d.r||[]).map(r=>(r.id===d.sh?'⭐ ':'🔪 ')+esc(r.nm)+(r.id===d.sh?'':' — '+r.k+' kill'+(r.k===1?'':'s')+(r.a?'':' (caught)'))).join('<br>');
  show('over')}
 // ===================== PLAY =====================
 function beginPlay(){G.state='play';cd=1;yaw=0;pitch=0;cam.fov=SET.fov;cam.updateProjectionMatrix();buildVM(me.role);show(null);$('hud').style.display='block';
  const r=me.role;$('role').textContent={sheriff:'⭐ SHERIFF',murderer:'🔪 MURDERER',civilian:'🙂 CIVILIAN'}[r];$('role').className='role '+r;
- $('obj').textContent={sheriff:'Find and shoot the Murderer. Shooting an innocent ends the game!',murderer:'Blend in. Stab every civilian or the Sheriff.',civilian:'Stay alive and stay out of trouble.'}[r];
+ $('obj').textContent={sheriff:'Everyone else is a Murderer hiding among the civilians. Find and shoot them all - but every innocent you shoot costs you!',murderer:'The Sheriff cannot be killed. Blend in with the crowd and stab civilians before time runs out. Teammates are tagged red.',civilian:''}[r];
  $('lock').style.display='block'}
 function moveMe(dt){cd-=dt;if(!me.a){me.m=0;return}me.ry=yaw;
  let f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0);if(!locked||G.state!=='play')f=s=0;
@@ -479,7 +495,23 @@ function updateCam(dt){
  if(VM){VM.visible=!!alive&&G.state==='play';vmK=Math.max(0,vmK-dt*5);const kk=vmK*vmK;
   if(me.role==='murderer'){VM.position.set(-kk*.22,Math.sin(bob*.5)*.008,-kk*.38);VM.rotation.z=kk*.9}
   else{VM.position.set(0,Math.sin(bob*.5)*.008,kk*.1);VM.rotation.x=kk*.18}}}
-function hud(dt){$('civs').textContent=civLeft;$('conn').textContent=G.test?'🧪 Test mode (offline)':G.net==='host'?'● Hosting · '+players.size+' player(s)':'● Connected · '+Math.round(PING)+' ms';
+function fmt(t){t=Math.ceil(t);return(t/60|0)+':'+String(t%60).padStart(2,'0')}
+const TG=[],_v=new THREE.Vector3();
+function tagAt(i,x,y,z,txt,col,edge){let d=TG[i];if(!d){d=TG[i]=document.createElement('div');d.className='tag';$('tags').appendChild(d)}
+ _v.set(x,y,z).project(cam);let sx=_v.x,sy=_v.y;const out=_v.z>1||Math.abs(sx)>1||Math.abs(sy)>1;if(out&&!edge){d.style.display='none';return}
+ if(_v.z>1){sx=-sx;sy=-sy}sx=Math.max(-.92,Math.min(.92,sx));sy=Math.max(-.9,Math.min(.9,sy));
+ d.style.display='block';d.style.left=(sx+1)/2*innerWidth+'px';d.style.top=(1-sy)/2*innerHeight+'px';d.textContent=txt;d.style.color=col}
+function updTags(dt){let i=0;
+ if(me.a&&me.role==='murderer')for(const id in V.p){const e=V.p[id];if(+id===me.id||+id===sheriffId||!e.a||!e.init)continue;tagAt(i++,e.x,2.15,e.z,'🔪 '+nameOf(+id),'#ff8a8a')}
+ PINGS=PINGS.filter(p=>(p.t-=dt)>0);
+ if(me.a&&me.role==='sheriff')for(const p of PINGS)tagAt(i++,p.x,2,p.z,'⚠ murder · '+Math.round(Math.hypot(p.x-me.x,p.z-me.z))+'m','#ffd27a',1);
+ for(;i<TG.length;i++)TG[i].style.display='none'}
+function drawTab(){if(G.net==='host')ROSTER=rosterList();
+ $('tabL').innerHTML=ROSTER.map(r=>{const sh=r.id===sheriffId;return'<div class="pl"><b>'+(sh?'⭐ ':'🔪 ')+esc(r.nm)+'</b>'+(sh?'':'<span>'+r.k+' kills</span>')+'<span class="'+(r.a?'ok':'bad2')+'">'+(r.a?'alive':'dead')+'</span>'+(r.pg?'<span style="opacity:.6">'+r.pg+'ms</span>':'')+msTxt(r.ms)+'</div>'}).join('');
+ $('tabF').textContent='Civilians left: '+civLeft+' / '+G.civTotal+(G.tEnd?' · Time left: '+fmt(Math.max(0,(G.tEnd-performance.now())/1000)):'')}
+function showTab(on){G.tabOn=!!on&&G.state==='play';$('tab').style.display=G.tabOn?'flex':'none';if(G.tabOn)drawTab()}
+function hud(dt){$('civs').textContent=civLeft+' / '+G.civTotal;{const al=ROSTER.filter(r=>r.id!==sheriffId&&r.a).length;$('mleft').innerHTML=ROSTER.length?'Murderers left: <b>'+al+'</b>':''}
+ $('timer').textContent=G.tEnd&&G.state==='play'?'⏱ '+fmt(Math.max(0,(G.tEnd-performance.now())/1000)):'';updTags(dt);if(G.tabOn&&(tabT-=dt)<=0){tabT=.25;drawTab()}$('conn').textContent=G.test?'🧪 Test mode (offline)':G.net==='host'?'● Hosting · '+players.size+' player(s)':'● Connected · '+Math.round(PING)+' ms';
  if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').textContent=''}$('lock').style.display=(!locked&&G.state==='play')?'block':'none';
  if(me&&!me.a&&G.state==='play')$('role').textContent='💀 YOU ARE DEAD'}
 // ===================== TEST: MODEL VIEWER =====================
@@ -510,12 +542,12 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
   if(G.state==='play'){moveMe(dt);acc+=dt;
    if(G.net==='host'){let n=0;while(acc>=TICK&&n++<3){acc-=TICK;hostTick()}if(acc>=TICK)acc=0}
    else{if(acc>=TICK){acc%=TICK;sendInput()}
-    if((pingT-=dt)<=0){pingT=2;const b=new ArrayBuffer(5),dv=new DataView(b);dv.setUint8(0,3);dv.setUint32(1,performance.now()>>>0);rawSend(conn,b)}}}
+    if((pingT-=dt)<=0){pingT=2;rawSend(conn,J({t:'pg',v:Math.round(PING)}));const b=new ArrayBuffer(5),dv=new DataView(b);dv.setUint8(0,3);dv.setUint32(1,performance.now()>>>0);rawSend(conn,b)}}}
   V.c.forEach(e=>updEnt(e,dt,false));for(const id in V.p)updEnt(V.p[id],dt,!!V.p[id].local);
   fxs=fxs.filter(f=>{f.t-=dt;if(f.t<=0){scene.remove(f.o);return false}return true});updateCam(dt);hud(dt)}
  renderer.render(scene,cam)}
 // ===================== INPUT / UI =====================
-addEventListener('keydown',e=>{keys[e.code]=true});addEventListener('keyup',e=>{keys[e.code]=false});
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Tab'){e.preventDefault();if(!e.repeat)showTab(1)}});addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Tab')showTab(0)});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===$('c');if(locked)$('pause').classList.remove('on');else if(G.state==='play')openSettings(false)});
 function syncSetUI(){$('sens').value=SET.sens;$('sensV').textContent=(+SET.sens).toFixed(1);$('fovR').value=SET.fov;$('fovV').textContent=SET.fov;$('qual').value=SET.quality;$('flashC').checked=SET.flash;
  $('tDay').style.outline=SET.time==='day'?'2px solid #fff':'none';$('tNight').style.outline=SET.time==='night'?'2px solid #fff':'none'}
@@ -529,6 +561,8 @@ addEventListener('keydown',e=>{if(e.code==='KeyF'&&G.state==='play'&&!e.repeat){
 addEventListener('wheel',e=>{if(G.state==='view')vd=Math.max(1.5,Math.min(60,vd*(1+e.deltaY*.001)))});
 addEventListener('mousemove',e=>{if(G.state==='view'&&e.buttons&1){vyaw-=e.movementX*.01;vpitch=Math.max(-.1,Math.min(1.4,vpitch+e.movementY*.01))}if(!locked)return;yaw-=e.movementX*.0025*SET.sens;pitch=Math.max(-1.4,Math.min(1.4,pitch-e.movementY*.002*SET.sens))});
 $('c').addEventListener('mousedown',()=>{if(G.state!=='play')return;if(!locked){$('c').requestPointerLock&&$('c').requestPointerLock();return}attack()});
+$('npcN').oninput=()=>{ROOM.npcs=+$('npcN').value;$('npcV').textContent=ROOM.npcs;if(G.net==='host')lobbyBcast()};$('rTime').onchange=()=>{ROOM.time=+$('rTime').value;lobbyBcast()};$('rStr').onchange=()=>{ROOM.strikes=+$('rStr').value;lobbyBcast()};$('rPing').onchange=()=>{ROOM.ping=$('rPing').checked?1:0;lobbyBcast()};
+$('roster').onclick=e=>{const k=e.target.dataset&&e.target.dataset.k;if(k&&G.net==='host')kick(+k)};$('pname').oninput=()=>{SET.name=$('pname').value;saveSet()};
 $('bHost').onclick=hostGame;$('bJoin').onclick=()=>joinGame($('code').value);
 $('bStart').onclick=()=>startGame();$('bView').onclick=openViewer;$('bSbS').onclick=()=>sandbox('sheriff');$('bSbM').onclick=()=>sandbox('murderer');
 $('bCopy').onclick=()=>{const l=$('link');l.select();(navigator.clipboard?navigator.clipboard.writeText(l.value):Promise.reject()).catch(()=>document.execCommand('copy'));$('bCopy').textContent='Copied!';setTimeout(()=>$('bCopy').textContent='Copy Invite Link',1500)};
@@ -558,7 +592,7 @@ async function pickFiles(files){
 $('bClr').onclick=clearSaved;$('bPick').onclick=()=>$('fpick').click();$('bPick2').onclick=()=>$('fpick').click();$('fpick').onchange=e=>pickFiles([...e.target.files]);
 (async()=>{
  if(!window.Peer||!window.THREE||!THREE.GLTFLoader){$('menuErr').textContent='Failed to load libraries (check your internet connection).'}
- await restoreLocal();await loadAll();applyQuality();syncSetUI();
+ $('pname').value=SET.name||'';await restoreLocal();await loadAll();applyQuality();syncSetUI();
  $('bHost').disabled=$('bJoin').disabled=!window.Peer;$('bView').disabled=$('bSbS').disabled=$('bSbM').disabled=false;
  const room=new URLSearchParams(location.search).get('room');if(room&&window.Peer){$('code').value=room;joinGame(room)}
  requestAnimationFrame(loop)})();
