@@ -1,59 +1,465 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#171a1f" />
-    <meta name="description" content="Frontier Detective — a first-person online social-deduction game." />
-    <title>Frontier Detective</title>
-    <style>
-      html, body { margin: 0; min-height: 100%; background: #171a1f; color: #f4f1e9; font-family: system-ui, sans-serif; }
-      #world { position: fixed; inset: 0; background: linear-gradient(#9abac5, #d2b277); }
-      #ui { position: fixed; inset: 0; z-index: 2; display: grid; place-items: center; box-sizing: border-box; padding: 20px; }
-      #boot-status { width: min(100%, 560px); box-sizing: border-box; padding: 28px; border-radius: 18px; border: 1px solid #735a35; background: rgba(24,27,31,.97); box-shadow: 0 20px 60px #0008; }
-      #boot-status h1 { margin: 0 0 12px; color: #fff0ce; font-size: clamp(24px, 5vw, 36px); }
-      #boot-status p { margin: 8px 0 0; color: #c7c3ba; line-height: 1.55; overflow-wrap: anywhere; }
-      #boot-status .boot-note { margin-top: 18px; font-size: 12px; color: #e5b55c; }
-    </style>
-    <script>
-      (() => {
-        const showStartupError = (title, detail) => {
-          if (window.__frontierBooted) return;
-          const panel = document.getElementById('boot-status');
-          if (!panel) return;
-          const heading = panel.querySelector('h1');
-          const message = panel.querySelector('[data-boot-detail]');
-          if (heading) heading.textContent = title;
-          if (message) message.textContent = String(detail || 'The game files failed to load.');
-        };
-        window.addEventListener('error', event => {
-          if (!window.__frontierBooted && document.getElementById('boot-status')) {
-            showStartupError('The game could not start', event.message || 'A game file failed to load.');
-          }
-        });
-        window.addEventListener('unhandledrejection', event => {
-          if (!window.__frontierBooted && document.getElementById('boot-status')) {
-            showStartupError('The game could not start', event.reason?.message || String(event.reason || 'An unexpected startup error occurred.'));
-          }
-        });
-        setTimeout(() => {
-          if (!window.__frontierBooted && document.getElementById('boot-status')) {
-            showStartupError('Game files did not load', "GitHub Pages must publish the built website, not the raw source files. In the repository, open Settings → Pages and choose GitHub Actions, then check the latest Actions run for a build or deploy error.");
-          }
-        }, 10000);
-      })();
-    </script>
-  </head>
-  <body>
-    <div id="world" aria-label="3D game scene"></div>
-    <main id="ui" aria-live="polite">
-      <section id="boot-status" role="status">
-        <h1>Frontier Detective</h1>
-        <p data-boot-detail>Loading the game…</p>
-        <p class="boot-note">This game is built for GitHub Pages. If loading fails, check the repository's Actions deployment log.</p>
-      </section>
-    </main>
-    <div id="toast-stack" aria-live="assertive"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hide & Seek Murder Mystery 3D</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:system-ui,Segoe UI,sans-serif;color:#eee}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+.scr{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,10,18,.82);backdrop-filter:blur(6px);z-index:5}
+.scr.on{display:flex}.card{width:min(460px,92vw);background:#161a28;border:1px solid #2c3550;border-radius:14px;padding:26px;box-shadow:0 20px 60px #000a}
+h1{margin:0 0 4px;font-size:26px}h2{margin:0 0 10px}.sub{color:#8f9bb8;margin:0 0 18px;font-size:14px}
+button,select,input{font:inherit;border-radius:8px;border:1px solid #34406a;background:#222a44;color:#eee;padding:10px 14px;width:100%;margin:5px 0}
+button{cursor:pointer;background:#c0392b;border-color:#e74c3c;font-weight:600}button:hover{filter:brightness(1.15)}button.alt{background:#2c3e70;border-color:#3d5aa8}button:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:8px}.row>*{flex:1}.row button{width:auto}.err{color:#ff7b6b;min-height:20px;font-size:14px}.stat{color:#8fd3a0;font-size:14px}
+#hud{position:fixed;inset:0;pointer-events:none;display:none;z-index:3}
+#hud .p{position:absolute;background:#0009;padding:8px 12px;border-radius:10px;font-size:14px}
+#tl{top:12px;left:12px}#tr{top:12px;right:12px;text-align:right}#bt{bottom:14px;left:50%;transform:translateX(-50%);max-width:90vw;text-align:center}
+#cross{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px;background:#fffd;box-shadow:0 0 0 2px #0006;border-radius:50%}
+#toast{position:absolute;top:70px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:700;text-shadow:0 2px 6px #000;text-align:center}
+#lock{position:absolute;top:42%;width:100%;text-align:center;font-size:20px;text-shadow:0 2px 8px #000}
+#viewer{position:fixed;inset:0;display:none;pointer-events:none;z-index:4}#viewer>*{pointer-events:auto}#vp{position:absolute;top:12px;left:12px;width:250px;max-height:94vh;overflow:auto;background:#000b;border-radius:10px;padding:10px}#vp button{margin:3px 0;padding:6px 10px;font-size:13px;text-align:left}#vp button.bad{background:#552}#vh{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#0009;padding:8px 14px;border-radius:10px;font-size:13px}.role{font-weight:800;font-size:18px}.sheriff{color:#5aa9ff}.murderer{color:#ff5a5a}.civilian{color:#9fe3a1}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hud">
+ <div class="p" id="tl"><div class="role" id="role"></div><div id="obj"></div></div>
+ <div class="p" id="tr"><div>Civilians left: <b id="civs">0</b></div><div id="conn"></div></div>
+ <div id="cross"></div><div id="toast"></div><div id="lock">Click to play · WASD move · Shift run · Click attack</div>
+ <div class="p" id="bt">WASD move · Shift run · Click attack · Esc releases the mouse</div>
+</div>
+<div id="viewer"><div id="vp"><b>Model Viewer</b><div class="sub" id="vinfo"></div><div class="row"><button class="alt" onclick="setAnim(0)">Idle</button><button class="alt" onclick="setAnim(1)">Walk</button><button class="alt" onclick="setAnim(2)">Run</button></div><div id="vl"></div><button class="alt" id="bPick2">📂 Load .glb files…</button><button onclick="closeViewer()">← Back to menu</button></div><div id="vh">Drag = orbit · Wheel = zoom · ←/→ = next/prev item · 1/2/3 = idle/walk/run</div></div>
+<div class="scr on" id="menu"><div class="card">
+ <h1>🔪 Hide &amp; Seek Murder Mystery</h1><p class="sub">3D · peer-to-peer multiplayer · no server needed</p>
+ <button id="bHost" disabled>Host Game</button>
+ <div class="row"><input id="code" placeholder="Room code / invite link"><button class="alt" id="bJoin" disabled>Join</button></div>
+ <div class="row"><button class="alt" id="bView" disabled>🧪 Model Viewer</button></div><div class="row"><button class="alt" id="bSbS" disabled>🧪 Sandbox: Sheriff</button><button class="alt" id="bSbM" disabled>🧪 Sandbox: Murderer</button></div><div class="row"><button class="alt" id="bPick">📂 Load models from your computer (.glb)</button></div><div class="row"><button class="alt" id="bClr" style="font-size:12px;padding:6px">Forget saved models</button></div><input type="file" id="fpick" multiple accept=".glb" style="display:none"><div class="err" id="menuErr"></div><pre id="diag" style="color:#ffd27a;font-size:11px;white-space:pre-wrap;word-break:break-all;margin:6px 0 0"></pre><div class="stat" id="load">Loading models…</div>
+</div></div>
+<div class="scr" id="lobby"><div class="card">
+ <h2>Lobby</h2><p class="sub">Players connected: <b id="lp">1</b> · AI civilians: <b id="lc">30</b></p>
+ <label class="sub">Map</label><select id="mapSel"></select><div class="sub" id="mapName" style="display:none"></div>
+ <div id="inv"><label class="sub">Invite link</label><div class="row"><input id="link" readonly><button class="alt" id="bCopy">Copy Invite Link</button></div></div>
+ <button id="bStart">Start Game (need 2+ players)</button><div class="err" id="lobErr"></div><div class="stat" id="lobStat"></div>
+</div></div>
+<div class="scr" id="over"><div class="card"><h1 id="oT"></h1><p class="sub" id="oW"></p><p id="oR"></p><button id="bAgain">Play Again</button></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+// ===================== CONFIG (swap models/textures here) =====================
+const CONFIG={
+  models:{ // URLs relative to this html file. null/missing file => simple built-in fallback shape
+    sheriff:'assets/police-officer-rigged.glb',
+    murderer:'assets/businessman-rigged.glb', // only shown on the murderer's own screen, so others can't spot them
+    civilian:'assets/businessman-rigged.glb',
+    blaster:'assets/laser-blaster.glb',
+    props:{cottage:'assets/cottage-house-light.glb',flowerShop:'assets/flower-shop-light.glb',dogHouse:'assets/dog-house.glb',
+      trash:'assets/trash-bag-pile.glb',bollard:'assets/bollard.glb',bikeRack:'assets/bike-rack.glb',vending:'assets/vending-machine.glb',truck:'assets/1950s-pickup-truck.glb'}
+  },
+  textures:{wall:null,floor:null,grass:null,road:null}, // optional image URLs
+  viewmodel:{scale:1.6,pos:[.26,-.3,-.5],yaw:Math.PI/2}, // held blaster in first person (tweak if it points the wrong way)
+  githubRepo:'',              // optional 'user/repo' if not on github.io
+  charYawOffset:0,            // adjust if your character models face the wrong way (radians)
+  scaling:{baseCivilians:20,perPlayer:10,maxPlayers:6},
+  speeds:{walk:2.6,run:5.5,civWalk:2.4,civPanic:5.6},
+  panicSeconds:3,shotPanicRadius:28,killPanicRadius:16,shootCooldown:1.1,stabCooldown:.7
+};
+// ===================== MAPS =====================
+function rng(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const MAPS={
+ suburb:{name:'Suburban Neighborhood',w:130,d:130,indoor:false,build(add,r){
+  const iv=[[-300,-27],[-18,18],[27,300]];
+  for(const p of[-22.5,22.5]){
+   add({k:'road',x:p,z:0,w:9,d:600});add({k:'road',x:0,z:p,w:600,d:9});
+   for(const[a,b]of iv){const c=(a+b)/2,L=b-a;add({k:'line',x:p,z:c,w:.25,d:L});add({k:'line',x:c,z:p,w:L,d:.25});
+    for(const sd of[-6,6]){add({k:'walk',x:p+sd,z:c,w:3,d:L});add({k:'walk',x:c,z:p+sd,w:L,d:3})}}
+   for(const q of[-45,0,45])for(const sd of[-6,6]){add({k:'lamp',x:p+sd,z:q,w:.4,d:.4,h:5.5});add({k:'lamp',x:q,z:p+sd,w:.4,d:.4,h:5.5})}
+  }
+  let n=0;
+  for(const bx of[-45,0,45])for(const bz of[-45,0,45]){
+   add({k:'prop',m:(n++%2)?'flowerShop':'cottage',x:bx,z:bz-3,w:8.8,d:7.5,h:6,c:0xcfa77a});
+   add({k:'hedge',x:bx,z:bz+13,w:22,d:1,h:1.9});add({k:'hedge',x:bx-11,z:bz+4,w:1,d:16,h:1.9});add({k:'hedge',x:bx+11,z:bz+4,w:1,d:16,h:1.9});
+   add({k:'prop',m:'dogHouse',x:bx+7,z:bz+8,w:1.3,d:1.4,h:1.1,c:0x9c6b3b});
+   add({k:'prop',m:'trash',x:bx-7,z:bz+9.5,w:1.3,d:1.4,h:1,c:0x222222});
+   add({k:'prop',m:'bollard',x:bx+r()*10-5,z:bz-12.5,w:.3,d:.3,h:1,c:0xdddd33});
+   add({k:'tree',x:bx-14,z:bz-14,w:.9,d:.9,h:6});add({k:'tree',x:bx+14,z:bz-14,w:.9,d:.9,h:6});
+  }
+  add({k:'prop',m:'truck',x:-22.5,z:-38,w:2.3,d:5.3,h:2.3,c:0x3a6ea5});add({k:'prop',m:'truck',x:22.5,z:12,w:2.3,d:5.3,h:2.3,c:0xa53a3a});
+  add({k:'prop',m:'truck',x:-36,z:22.5,w:5.3,d:2.3,h:2.3,c:0x3aa56e,ry:Math.PI/2});add({k:'prop',m:'truck',x:32,z:-22.5,w:5.3,d:2.3,h:2.3,c:0xa5a53a,ry:Math.PI/2});
+  for(const x of[-12,12])add({k:'prop',m:'vending',x,z:-16,w:.9,d:.85,h:1.85,c:0xd33});
+  for(const x of[-4,4])add({k:'prop',m:'bikeRack',x,z:-17,w:2.6,d:.74,h:.8,c:0x888});
+ }},
+ museum:{name:'The Grand Museum',w:110,d:76,indoor:true,build(add,r){
+  const W=(x1,z1,x2,z2)=>{add({k:'wall',x:(x1+x2)/2,z:(z1+z2)/2,w:Math.abs(x2-x1)+1,d:Math.abs(z2-z1)+1,h:7});
+   const hor=z1===z2,L=Math.abs(hor?x2-x1:z2-z1),lo=Math.min(hor?x1:z1,hor?x2:z2);
+   for(let t=lo+5;t<lo+L-3;t+=7)for(const s of[-1,1])add({k:'painting',nocol:true,x:hor?t:x1+s*.53,z:hor?z1+s*.53:t,ry:hor?(s>0?0:Math.PI):(s>0?Math.PI/2:-Math.PI/2),i:Math.abs(Math.round(t*3)+(s>0?1:0))%6})};
+  add({k:'carpet',x:0,z:0,w:12,d:72});
+  for(const sx of[-1,1]){
+   W(sx*18,-38,sx*18,-9);W(sx*18,9,sx*18,38);
+   for(const sz of[-1,1]){
+    W(sx*55,sz*13,sx*28,sz*13);W(sx*50,sz*26,sx*32,sz*26);
+    add({k:'case',x:sx*42,z:sz*19,w:5,d:1.6,h:1.2});add({k:'case',x:sx*7,z:sz*15,w:4,d:1.6,h:1.2});
+    add({k:'statue',x:sx*26,z:sz*32,w:1.4,d:1.4,h:3});add({k:'statue',x:0,z:sz*12,w:1.4,d:1.4,h:3});
+    add({k:'case',x:sx*44,z:sz*6,w:1.6,d:5,h:1.2});
+    add({k:'col',x:sx*13,z:sz*24,w:1.2,d:1.2,h:8});add({k:'col',x:sx*13,z:sz*7,w:1.2,d:1.2,h:8});
+   }
+   add({k:'statue',x:sx*36,z:0,w:1.6,d:1.6,h:3.2});add({k:'prop',m:'vending',x:sx*53.8,z:4,w:.9,d:.85,h:1.85,c:0x2a6});
+  }
+  add({k:'statue',x:0,z:0,w:2.4,d:2.4,h:4});
+  for(const[a,b]of[[3.5,3.5],[-3.5,3.5],[3.5,-3.5],[-3.5,-3.5]])add({k:'prop',m:'bollard',x:a,z:b,w:.3,d:.3,h:1,c:0xaa2222});
+ }}
+};
+// ===================== GLOBALS =====================
+const $=id=>document.getElementById(id);
+const G={state:'menu',map:'suburb',net:null,civTotal:0};
+let peer=null,conn=null,players=new Map(),nextId=1,me=null,C=[],V={c:[],p:{}},R=[],MW=100,MD=100,CH={},PR={},sheriffId=-1,roomCode='';
+const keys={};let yaw=0,pitch=0,locked=false,cd=0,fxs=[],ac=null,toastT=0,civLeft=0;
+// ===================== THREE SETUP =====================
+const renderer=new THREE.WebGLRenderer({canvas:$('c'),antialias:true});renderer.outputEncoding=THREE.sRGBEncoding;renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(75,1,.05,1100),worldG=new THREE.Group(),entG=new THREE.Group();scene.add(worldG,entG,cam);cam.rotation.order='YXZ';
+const hemi=new THREE.HemisphereLight(0xdfeeff,0x667755,.85),sun=new THREE.DirectionalLight(0xfff2dd,1.1);sun.position.set(40,80,30);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-45,right:45,top:45,bottom:-45,near:1,far:220});sun.shadow.bias=-.0004;scene.add(hemi,sun,sun.target);let SKY=null,VM=null,vmK=0,bob=0;
+function resize(){renderer.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',resize);resize();
+// ===================== ASSETS =====================
+const cache={};
+const LOCAL={};
+const bkey=u=>u.split('/').pop().toLowerCase().replace(/\.(glb|js)$/,'').replace(/[ _-]*\(?\d+\)?$/,'');
+function finishM(g,norm){if(norm){const b=new THREE.Box3().setFromObject(g.scene),c=b.getCenter(new THREE.Vector3()),w=new THREE.Group();g.scene.position.set(-c.x,-b.min.y,-c.z);w.add(g.scene);g.scene=w}return g}
+const FAIL=[],BASE=new URL(/\/$|\.\w+$/.test(location.pathname)?'.':location.pathname+'/',location.href).href;
+function repoInfo(){const q=new URLSearchParams(location.search).get('repo')||CONFIG.githubRepo;if(q&&q.includes('/')){const[u,r]=q.split('/');return{u,r}}
+ if(/\.github\.io$/i.test(location.hostname)){const seg=location.pathname.split('/')[1];return{u:location.hostname.split('.')[0],r:(!seg||/\./.test(seg))?location.hostname:seg}}return null}
+let TREE=null;
+function tree(){return TREE||(TREE=(async()=>{const ri=repoInfo();if(!ri)return null;
+ for(const br of['HEAD','main','master']){try{const r=await fetch('https://api.github.com/repos/'+ri.u+'/'+ri.r+'/git/trees/'+br+'?recursive=1');if(r.ok){const j=await r.json();return{ri,br,files:j.tree.filter(t=>/\.(glb|js)$/i.test(t.path)).map(t=>t.path)}}}catch(e){}}
+ return{ri,br:null,files:null}})())}
+function loadM(url,norm){if(!url)return Promise.resolve(null);if(cache[url])return cache[url];
+ return cache[url]=(async()=>{const name=url.split('/').pop().replace(/\.glb$/,'');
+  try{const ld=new THREE.GLTFLoader(),k=bkey(url);
+  const fin=g=>{try{return finishM(g,norm)}catch(e){return null}},parse=(b,u)=>new Promise((ok,no)=>ld.parse(b,u.replace(/[^/]*$/,''),ok,no));
+  if(LOCAL[k]){try{return fin(await parse(LOCAL[k].slice(0),''))}catch(e){FAIL.push(name+': parse error '+(e.message||e));return null}}
+  const dir=url.replace(/[^/]*$/,''),errs=[];
+  const attempt=async list=>{for(const u of list){try{const r=await fetch(u);if(!r.ok){errs.push(r.status+' '+u);continue}const b=await r.arrayBuffer();
+   if(b.byteLength<3000&&/git-lfs|<html/i.test(new TextDecoder().decode(b))){errs.push('not a real .glb (LFS pointer or HTML page): '+u);continue}
+   return fin(await parse(b,u))}catch(e){errs.push((e.message||e)+' '+u)}}return null};
+  const EM=window.MODELS&&window.MODELS[k];
+  if(EM){try{const bin=atob(EM),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);return fin(await parse(u8.buffer,''))}catch(e){errs.push('embedded model error: '+(e.message||e))}}
+  let g=await attempt([BASE+dir+name+'.glb',BASE+dir+name+'_1.glb',BASE+name+'.glb',BASE+name+'_1.glb',BASE+'models/'+name+'.glb']);
+  if(g)return g;
+  const t=await tree();   // fallback: find the file anywhere in the GitHub repo and load it from there
+  if(t&&t.files){const{u,r}=t.ri,found=t.files.filter(p=>/\.glb$/i.test(p)&&bkey(p)===k);
+   const list=[];found.forEach(p=>{list.push('https://raw.githubusercontent.com/'+u+'/'+r+'/'+t.br+'/'+p.split('/').map(encodeURIComponent).join('/'));if(t.br!=='HEAD')list.push('https://cdn.jsdelivr.net/gh/'+u+'/'+r+'@'+t.br+'/'+p.split('/').map(encodeURIComponent).join('/'))});
+   g=await attempt(list);if(g)return g}
+  FAIL.push(name+': not found - expected assets/'+name+'.js ('+errs[0]+')');return null}
+  catch(e){FAIL.push(name+': '+(e.message||e)+(window.THREE&&THREE.GLTFLoader?'':' (GLTFLoader library did not load - CDN blocked?)'));return null}})()}
+function ctex(draw,s=128){const c=document.createElement('canvas');c.width=c.height=s;draw(c.getContext('2d'),s);return new THREE.CanvasTexture(c)}
+const DRAW={
+ wall:(x,s)=>{x.fillStyle='#d8cdb8';x.fillRect(0,0,s,s);x.strokeStyle='#b7a98e';x.lineWidth=3;x.strokeRect(6,6,s-12,s-12)},
+ floor:(x,s)=>{x.fillStyle='#d6d0c2';x.fillRect(0,0,s,s);x.fillStyle='#bfb8a8';x.fillRect(0,0,s/2,s/2);x.fillRect(s/2,s/2,s/2,s/2);x.strokeStyle='#9d9684';x.lineWidth=2;x.strokeRect(0,0,s,s);x.strokeStyle='#ffffff40';for(let i=0;i<8;i++){x.beginPath();x.moveTo(Math.random()*s,0);x.lineTo(Math.random()*s,s);x.stroke()}},
+ grass:(x,s)=>{x.fillStyle='#4f9a3e';x.fillRect(0,0,s,s);for(let i=0;i<300;i++){x.fillStyle=Math.random()<.5?'#5aab48':'#448a35';x.fillRect(Math.random()*s,Math.random()*s,2,3)}},
+ road:(x,s)=>{x.fillStyle='#3a3d42';x.fillRect(0,0,s,s);for(let i=0;i<200;i++){x.fillStyle='#464950';x.fillRect(Math.random()*s,Math.random()*s,2,2)}}};
+function T(key,rx,ry){let t=CONFIG.textures[key]?new THREE.TextureLoader().load(CONFIG.textures[key]):ctex(DRAW[key]);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);return t}
+const mat=(c,o)=>new THREE.MeshLambertMaterial(Object.assign({color:c},o||{}));
+// ===================== WORLD =====================
+const SHARED={},SG={t:new THREE.CylinderGeometry(.2,.28,2.2,7),s:new THREE.SphereGeometry(1.7,9,7)};
+const gmat=(k,c,o)=>SHARED[k]||(SHARED[k]=mat(c,o));
+const nf=(m,c,r)=>{m.userData.nc=c;m.userData.nr=r;return m};
+function pl(w,d,y,col,map){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),map?new THREE.MeshLambertMaterial({map}):mat(col));m.rotation.x=-Math.PI/2;m.position.y=y;return nf(m,1,0)}
+function mkTree(x,z,sc){const g=new THREE.Group(),v=Math.abs(Math.sin(x*12.9+z*7.3))*2.99|0,cm=gmat('leaf'+v,[0x2f7d32,0x3d8f3a,0x4a9a45][v]);
+ const tr=new THREE.Mesh(SG.t,gmat('trunk',0x6b4a2b));tr.position.y=1.1;const a=new THREE.Mesh(SG.s,cm);a.position.y=3.4;a.scale.set(1,1.15,1);const b=new THREE.Mesh(SG.s,cm);b.position.set(.5,4.6,.2);b.scale.set(.7,.8,.7);
+ g.add(tr,a,b);g.position.set(x,0,z);g.scale.setScalar(sc||1);return g}
+function skyDome(ind){const c=document.createElement('canvas');c.width=4;c.height=256;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,256);
+ g.addColorStop(0,'#3a7bd5');g.addColorStop(.42,'#8fc4ee');g.addColorStop(.5,'#e8f4fc');g.addColorStop(.52,'#b4c8a4');g.addColorStop(1,'#7f9a74');x.fillStyle=g;x.fillRect(0,0,4,256);
+ const grp=new THREE.Group(),sk=new THREE.Mesh(new THREE.SphereGeometry(800,24,16),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),side:THREE.BackSide,fog:false,depthWrite:false}));sk.renderOrder=-2;
+ const su=new THREE.Mesh(new THREE.SphereGeometry(28,12,8),new THREE.MeshBasicMaterial({color:0xfff6d0,fog:false}));su.position.set(380,480,280);grp.add(sk,su);grp.traverse(o=>nf(o,1,1));return grp}
+let ART=[];
+function art(i){if(ART[i])return ART[i];const c=document.createElement('canvas');c.width=128;c.height=96;const x=c.getContext('2d');x.fillStyle=['#d9c9a3','#a9c4d6','#c9a9a0','#a8b99a','#cbbf9a','#9fa8c9'][i%6];x.fillRect(0,0,128,96);
+ for(let k=0;k<7;k++){x.fillStyle='hsl('+((i*57+k*43)%360)+',50%,'+(35+k*5)+'%)';x.beginPath();x.arc(Math.random()*128,Math.random()*96,10+Math.random()*28,0,7);x.fill()}
+ return ART[i]=new THREE.MeshLambertMaterial({map:new THREE.CanvasTexture(c)})}
+function glassWall(o){const g=new THREE.Group(),L=Math.max(o.w,o.d),hor=o.w>o.d;
+ const base=new THREE.Mesh(new THREE.BoxGeometry(hor?L:1,1.2,hor?1:L),new THREE.MeshLambertMaterial({map:T('wall',L/4,.3)}));base.position.y=.6;
+ const gl=nf(new THREE.Mesh(new THREE.BoxGeometry(hor?L:.1,5.6,hor?.1:L),new THREE.MeshBasicMaterial({color:0xa9d3f5,transparent:true,opacity:.13,depthWrite:false})),1,1);gl.position.y=4;g.add(base,gl);
+ for(let t=-L/2;t<=L/2+.1;t+=11){const p=new THREE.Mesh(new THREE.BoxGeometry(1.3,8,1.3),gmat('pil',0xcfc6b2));p.position.set(hor?t:0,4,hor?0:t);g.add(p)}
+ g.position.set(o.x,0,o.z);worldG.add(g)}
+function fenceVis(o){const g=new THREE.Group(),L=Math.max(o.w,o.d),hor=o.w>o.d,fm=gmat('fw',0xf3ecdc);
+ const p=new THREE.Mesh(new THREE.BoxGeometry(hor?L:.1,1.5,hor?.1:L),fm);p.position.y=.75;g.add(p);
+ for(let t=-L/2;t<=L/2;t+=3){const q=new THREE.Mesh(new THREE.BoxGeometry(.25,1.8,.25),gmat('fp',0xd8cdb3));q.position.set(hor?t:0,.9,hor?0:t);g.add(q)}
+ g.position.set(o.x,0,o.z);worldG.add(g)}
+function buildWorld(key,seed){
+ const M=MAPS[key],ind=M.indoor,hw=M.w/2,hd=M.d/2,rr=rng(seed+7);worldG.clear();R=[];MW=M.w;MD=M.d;
+ const hz=0xdcebf7;scene.background=new THREE.Color(hz);scene.fog=new THREE.Fog(hz,ind?60:80,700);
+ hemi.intensity=ind?.85:.85;sun.intensity=ind?.3:1.15;sun.castShadow=!ind;
+ SKY=skyDome(ind);worldG.add(SKY);
+ const out=pl(2000,2000,-.02,0,T('grass',250,250));worldG.add(out);
+ const g=pl(M.w,M.d,0,0,T(ind?'floor':'grass',M.w/(ind?8:10),M.d/(ind?8:10)));if(ind)g.userData.nc=1;worldG.add(g);
+ for(let i=0;i<22;i++){const a=i/22*6.283+rr(),rad=430+rr()*80,h=new THREE.Mesh(new THREE.SphereGeometry(1,14,9),gmat('hill'+(i%2),i%2?0x5c8660:0x6c8c99));
+  h.scale.set(100+rr()*90,30+rr()*45,100+rr()*70);h.position.set(Math.cos(a)*rad,-8,Math.sin(a)*rad);worldG.add(nf(h,1,1))}
+ if(ind){
+  worldG.add(pl(M.w+36,M.d+36,-.01,0x8c887f));
+  const c=nf(new THREE.Mesh(new THREE.PlaneGeometry(M.w,M.d),mat(0xe6dfd0)),1,1);c.position.y=8;c.rotation.x=Math.PI/2;worldG.add(c);
+  for(let x=-40;x<=40;x+=20)for(let z=-24;z<=24;z+=24){const l=new THREE.PointLight(0xfff0d0,.55,48);l.position.set(x,6.5,z);worldG.add(l);
+   const st=nf(new THREE.Mesh(new THREE.BoxGeometry(6,.1,1.2),new THREE.MeshBasicMaterial({color:0xfff4d6})),1,1);st.position.set(x,7.95,z);worldG.add(st)}
+  for(let i=0;i<46;i++){const a=i/46*6.283,rad=170+rr()*120,h=25+rr()*80,w=14+rr()*18,b=new THREE.Mesh(new THREE.BoxGeometry(w,h,w),gmat('bld'+(i%3),[0x8e9bb0,0xa4adbb,0x7d8aa0][i%3]));b.position.set(Math.cos(a)*rad,h/2-1,Math.sin(a)*rad);worldG.add(nf(b,1,1))}
+ }
+ for(let i=0;i<(ind?70:110);i++){const x=(rr()-.5)*(M.w+(ind?140:300)),z=(rr()-.5)*(M.d+(ind?140:300));if(Math.abs(x)<hw+(ind?6:2)&&Math.abs(z)<hd+(ind?6:2))continue;
+  if(!ind&&(Math.abs(Math.abs(x)-22.5)<7||Math.abs(Math.abs(z)-22.5)<7))continue;worldG.add(mkTree(x,z,.9+rr()*.7))}
+ const add=o=>{
+  const k=o.k,h=o.h||.05,nc=o.nocol||'road walk line carpet painting'.includes(k);let m;
+  if(!nc)R.push({x1:o.x-o.w/2,x2:o.x+o.w/2,z1:o.z-o.d/2,z2:o.z+o.d/2,h});
+  if(k==='road'||k==='walk'||k==='line'||k==='carpet'){
+   const col={road:0,walk:0xbdb9b0,line:0xe8c84a,carpet:0x8b2230}[k],y={road:o.w>o.d?.031:.03,walk:.04,line:.05,carpet:.025}[k];
+   m=pl(o.w,o.d,y,col,k==='road'?T('road',o.w/6,o.d/6):null);m.position.x=o.x;m.position.z=o.z;worldG.add(m);return}
+  if(k==='prop'){const p=PR[o.m];if(p){m=p.scene.clone(true);m.position.set(o.x,0,o.z);m.rotation.y=o.ry||0}
+   else{m=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(o.w,h,o.d),mat(o.c||0x999999));b.position.y=h/2;m.add(b);
+    if(/cottage|flower/.test(o.m||'')){const rf=new THREE.Mesh(new THREE.ConeGeometry(Math.max(o.w,o.d)*.75,2.5,4),mat(0x7a3b2e));rf.position.y=h+1.2;rf.rotation.y=Math.PI/4;m.add(rf)}m.position.set(o.x,0,o.z)}
+   worldG.add(m);return}
+  if(k==='tree'){worldG.add(mkTree(o.x,o.z,1.1));return}
+  if(k==='lamp'){m=new THREE.Group();const p=new THREE.Mesh(new THREE.CylinderGeometry(.07,.1,h,8),gmat('lp',0x444a52));p.position.y=h/2;const hd2=nf(new THREE.Mesh(new THREE.SphereGeometry(.3,10,8),new THREE.MeshBasicMaterial({color:0xfff2b0})),1,1);hd2.position.y=h;m.add(p,hd2);m.position.set(o.x,0,o.z);worldG.add(m);return}
+  if(k==='col'){m=new THREE.Group();const cc=gmat('cs',0xdcd5c4),sh=new THREE.Mesh(new THREE.CylinderGeometry(.5,.55,h,14),cc);sh.position.y=h/2;
+   for(const y of[.2,h-.2]){const b=new THREE.Mesh(new THREE.BoxGeometry(1.3,.4,1.3),cc);b.position.y=y;m.add(b)}m.add(sh);m.position.set(o.x,0,o.z);worldG.add(m);return}
+  if(k==='painting'){m=new THREE.Group();const fr=new THREE.Mesh(new THREE.BoxGeometry(3.4,2.4,.06),gmat('fr',0x6b4f1d)),cv=new THREE.Mesh(new THREE.PlaneGeometry(3,2),art(o.i||0));cv.position.z=.04;nf(cv,1,0);m.add(fr,cv);m.position.set(o.x,3.4,o.z);m.rotation.y=o.ry;worldG.add(m);return}
+  if(k==='fence'){fenceVis(o);return}
+  if(k==='glass'){glassWall(o);return}
+  if(k==='wall'){m=new THREE.Mesh(new THREE.BoxGeometry(o.w,h,o.d),new THREE.MeshLambertMaterial({map:T('wall',Math.max(o.w,o.d)/4,h/4)}))}
+  else if(k==='hedge'){m=new THREE.Mesh(new THREE.BoxGeometry(o.w,h,o.d),gmat('hedge',0x2f7a2f))}
+  else if(k==='case'){m=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(o.w,.6,o.d),mat(0x4a3b2c));b.position.y=.3;const gl=nf(new THREE.Mesh(new THREE.BoxGeometry(o.w-.2,h-.6,o.d-.2),mat(0x9fd8ff,{transparent:true,opacity:.35})),1,1);gl.position.y=.6+(h-.6)/2;
+   const it=new THREE.Mesh(new THREE.OctahedronGeometry(.35),mat(0xffcc33,{emissive:0x553300}));it.position.y=.95;m.add(b,gl,it);m.position.set(o.x,0,o.z);worldG.add(m);return}
+  else if(k==='statue'){m=new THREE.Group();const b=new THREE.Mesh(new THREE.CylinderGeometry(o.w/2,o.w/2+.1,1,12),mat(0x999999));b.position.y=.5;const sb=new THREE.Mesh(new THREE.CylinderGeometry(.35,.5,h-1.5,10),mat(0xd8d2c4));sb.position.y=1+(h-1.5)/2;const hd=new THREE.Mesh(new THREE.SphereGeometry(.4,12,10),mat(0xd8d2c4));hd.position.y=h-.5;m.add(b,sb,hd);m.position.set(o.x,0,o.z);worldG.add(m);return}
+  m.position.set(o.x,h/2,o.z);worldG.add(m)};
+ M.build(add,rng(seed));
+ const eh=ind?8:2.4,ek=ind?'glass':'fence';
+ add({k:ek,x:0,z:-hd-.5,w:M.w+2,d:1,h:eh});add({k:ek,x:0,z:hd+.5,w:M.w+2,d:1,h:eh});add({k:ek,x:-hw-.5,z:0,w:1,d:M.d,h:eh});add({k:ek,x:hw+.5,z:0,w:1,d:M.d,h:eh});
+ if(!ind)for(let x=-225;x<=225;x+=45)for(let z=-225;z<=225;z+=45){if(Math.max(Math.abs(x),Math.abs(z))<=80)continue;
+  add({k:'prop',nocol:true,m:rr()<.5?'cottage':'flowerShop',x:x+rr()*6-3,z:z+rr()*6-3,w:8.8,d:7.5,h:6,ry:Math.floor(rr()*4)*Math.PI/2,c:0xcfa77a})}
+ worldG.traverse(o=>{if(o.isMesh){o.castShadow=!o.userData.nc;o.receiveShadow=!o.userData.nr}});
+}
+function resolve(x,z,r){for(const q of R){const cx=Math.max(q.x1,Math.min(x,q.x2)),cz=Math.max(q.z1,Math.min(z,q.z2)),dx=x-cx,dz=z-cz,d=Math.hypot(dx,dz);if(d<r){if(d>1e-4){x=cx+dx/d*r;z=cz+dz/d*r}else x=q.x1-r}}return[x,z]}
+function freePoint(r){for(let i=0;i<300;i++){const x=(Math.random()-.5)*(MW-6),z=(Math.random()-.5)*(MD-6);let ok=true;for(const q of R)if(x>q.x1-r-.5&&x<q.x2+r+.5&&z>q.z1-r-.5&&z<q.z2+r+.5){ok=false;break}if(ok)return[x,z]}return[0,0]}
+function wallT(ox,oz,dx,dz,max){let t=max;for(const q of R){if(q.h<1.7)continue;let a=0,b=t,ok=true;for(const[o,d,lo,hi]of[[ox,dx,q.x1,q.x2],[oz,dz,q.z1,q.z2]]){if(Math.abs(d)<1e-6){if(o<lo||o>hi){ok=false;break}}else{let t1=(lo-o)/d,t2=(hi-o)/d;if(t1>t2)[t1,t2]=[t2,t1];a=Math.max(a,t1);b=Math.min(b,t2)}}if(ok&&a<=b&&a>0)t=Math.min(t,a)}return t}
+// ===================== CHARACTERS =====================
+function mkChar(kind){
+ const g=new THREE.Group(),inner=new THREE.Group();g.add(inner);const e={g,inner,acts:{},mixer:null,x:0,z:0,ry:0,tx:0,tz:0,tr:0,m:0,a:1,init:0,kt:0,knife:null};
+ const src=CH[kind];
+ if(src){const o=THREE.SkeletonUtils.clone(src.scene);inner.add(o);e.mixer=new THREE.AnimationMixer(o);src.animations.forEach(an=>{const a=e.mixer.clipAction(an);a.play();a.setEffectiveWeight(0);e.acts[an.name]=a})}
+ else{const col=kind==='sheriff'?0x2f6fd0:kind==='murderer'?0x333333:0x8a5a3a;const b=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,1.2,12),mat(col));b.position.y=.7;const h=new THREE.Mesh(new THREE.SphereGeometry(.3,12,10),mat(0xf0c8a0));h.position.y=1.5;inner.add(b,h)}
+ if(kind==='sheriff'){const bl=PR.blaster?PR.blaster.scene.clone(true):new THREE.Mesh(new THREE.BoxGeometry(.1,.1,.35),mat(0x222222));bl.scale.multiplyScalar(PR.blaster?2.2:1);bl.position.set(.3,1.05,.35);inner.add(bl)}
+ const kn=new THREE.Mesh(new THREE.BoxGeometry(.05,.05,.6),mat(0xdddddd,{emissive:0x661111}));kn.position.set(.3,1.0,.5);kn.visible=false;inner.add(kn);e.knife=kn;
+ g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false}});g.visible=false;entG.add(g);return e}
+function setT(e,x,z,r,m,a){e.tx=x;e.tz=z;e.tr=r;e.m=m;e.a=a;if(!e.init){e.x=x;e.z=z;e.ry=r;e.init=1;e.g.visible=true}}
+function updEnt(e,dt,local){
+ if(local){e.x=me.x;e.z=me.z;e.ry=me.ry;e.m=me.m;e.a=me.a;if(!e.init){e.init=1;e.g.visible=true}}
+ else{const k=1-Math.exp(-14*dt);e.x+=(e.tx-e.x)*k;e.z+=(e.tz-e.z)*k;let d=e.tr-e.ry;d=Math.atan2(Math.sin(d),Math.cos(d));e.ry+=d*k}
+ e.g.position.set(e.x,0,e.z);e.g.rotation.y=e.ry+CONFIG.charYawOffset;
+ if(!e.a){e.inner.rotation.x=-Math.PI/2;e.inner.position.y=.35;e.knife.visible=false;return}
+ if(e.mixer){if(e.acts.walk)e.acts.walk.setEffectiveWeight(e.m===1?1:0);if(e.acts.run)e.acts.run.setEffectiveWeight(e.m===2?1:0);if(!e.acts.walk&&!e.acts.run){}e.mixer.update(e.m?dt:0)}
+ else e.inner.position.y=e.m?Math.abs(Math.sin(performance.now()/120))*.1:0;
+ if(e.kt>0){e.kt-=dt;e.knife.visible=e.kt>0}
+}
+function setupWorld(map,seed,n,sh,ids,myId,myRole){
+ buildWorld(map,seed);entG.clear();V={c:[],p:{}};sheriffId=sh;
+ for(let i=0;i<n;i++)V.c.push(mkChar('civilian'));
+ for(const id of ids)V.p[id]=mkChar(id===sh?'sheriff':(id===myId&&myRole==='murderer')?'murderer':'civilian');
+ V.p[myId].local=true;civLeft=n;G.civTotal=n;
+}
+// ===================== AUDIO / FX =====================
+function beep(f,d,type){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=type||'square';o.frequency.value=f;g.gain.value=.08;g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+function toast(t){$('toast').textContent=t;toastT=3}
+function onEvent(ev){
+ if(ev.k==='shot'){const dx=Math.sin(ev.ry),dz=Math.cos(ev.ry),p=[new THREE.Vector3(ev.x,1.2,ev.z),new THREE.Vector3(ev.x+dx*ev.len,1.2,ev.z+dz*ev.len)];
+  const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(p),new THREE.LineBasicMaterial({color:0x66ccff}));scene.add(l);fxs.push({o:l,t:.15});beep(180,.2,'sawtooth')}
+ else if(ev.k==='stab'){const e=V.p[ev.id];if(e)e.kt=.35;beep(90,.15,'triangle')}
+ else if(ev.k==='kill'){if(ev.p!==undefined&&ev.p===me.id){me.a=0;toast('You were killed!')}else toast(ev.msg||'Someone was killed!');beep(60,.4,'sawtooth')}
+}
+// ===================== NETWORK =====================
+const send=(id,m)=>{const p=players.get(id);if(p&&p.conn&&p.conn.open)try{p.conn.send(m)}catch(e){}};
+const bcast=m=>players.forEach(p=>{if(p.conn&&p.conn.open)try{p.conn.send(m)}catch(e){}});
+function show(id){['menu','lobby','over'].forEach(s=>$(s).classList.toggle('on',s===id));$('hud').style.display=id?'none':'block'}
+function fail(msg){G.state='menu';G.test=0;if(peer){try{peer.destroy()}catch(e){}}peer=conn=null;players=new Map();document.exitPointerLock&&document.exitPointerLock();show('menu');$('menuErr').textContent=msg;$('bHost').disabled=$('bJoin').disabled=false}
+function civCount(n){return CONFIG.scaling.baseCivilians+CONFIG.scaling.perPlayer*n}
+function lobbyUI(n,map){$('lp').textContent=n;$('lc').textContent=civCount(n);$('mapName').textContent='Map: '+MAPS[map].name;$('mapSel').value=map;$('bStart').disabled=G.net==='host'?n<2:true}
+function lobbyBcast(){lobbyUI(players.size,G.map);bcast({t:'lobby',n:players.size,map:G.map})}
+function hostGame(){
+ G.net='host';$('menuErr').textContent='';$('bHost').disabled=$('bJoin').disabled=true;
+ const mk=()=>{roomCode='hsmm-'+Math.random().toString(36).slice(2,8);peer=new Peer(roomCode);
+  peer.on('open',id=>{G.state='lobby';players=new Map([[0,{id:0,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian'}]]);nextId=1;
+   const u=new URL(location.href);u.search='';u.hash='';$('link').value=u.toString()+'?room='+id;$('inv').style.display='';$('mapSel').style.display='';$('mapName').style.display='none';$('lobErr').textContent='';$('lobStat').textContent='Waiting for players… share the invite link.';lobbyUI(1,G.map);show('lobby')});
+  peer.on('connection',c=>{
+   if(G.state!=='lobby'||players.size>=CONFIG.scaling.maxPlayers){c.on('open',()=>{try{c.send({t:'full'})}catch(e){}setTimeout(()=>c.close(),400)});return}
+   const id=nextId++;c.on('open',()=>{players.set(id,{id,conn:c,x:0,z:0,ry:0,m:0,a:1,role:'civilian'});c.send({t:'hello',id});lobbyBcast()});
+   c.on('data',d=>onHostData(id,d));c.on('close',()=>drop(id));c.on('error',()=>drop(id))});
+  peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
+  peer.on('error',e=>{if(e.type==='unavailable-id'){try{peer.destroy()}catch(x){}mk()}else if(G.state==='menu'||!G.state)fail('Network error: '+e.type);else $('lobErr').textContent='Network issue: '+e.type})};
+ mk();
+}
+function drop(id){const p=players.get(id);if(!p)return;players.delete(id);
+ if(G.state==='lobby')lobbyBcast();
+ else if(G.state==='play'){if(p.role==='murderer')over('sheriff','The Murderer left the game.');else if(p.role==='sheriff')over('murderer','The Sheriff left the game.')}}
+function joinGame(raw){
+ let code=raw.trim();try{const u=new URL(code);code=u.searchParams.get('room')||code}catch(e){}
+ if(!code){$('menuErr').textContent='Enter a room code or invite link.';return}
+ G.net='client';$('menuErr').textContent='';$('bHost').disabled=$('bJoin').disabled=true;$('load').textContent='Connecting…';
+ let opened=false;
+ try{peer=new Peer()}catch(e){return fail('Could not start networking.')}
+ const to=setTimeout(()=>{if(!opened)fail('Could not reach the host (timed out).')},12000);
+ peer.on('open',()=>{conn=peer.connect(code,{reliable:true});
+  conn.on('open',()=>{opened=true;clearTimeout(to);G.state='lobby';$('inv').style.display='none';$('mapSel').style.display='none';$('mapName').style.display='';$('lobStat').textContent='Connected! Waiting for the host to start…';$('lobErr').textContent='';$('load').textContent='';show('lobby')});
+  conn.on('data',onClientData);conn.on('close',()=>{if(G.state!=='menu')fail('Disconnected from host.')});conn.on('error',()=>fail('Connection error.'))});
+ peer.on('error',e=>{clearTimeout(to);fail(e.type==='peer-unavailable'?'Room not found. Check the link/code.':'Network error: '+e.type)});
+ peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
+}
+function onHostData(id,d){const p=players.get(id);if(!p||!d)return;
+ if(d.t==='in'&&G.state==='play'&&p.a&&isFinite(d.x)&&isFinite(d.z)){p.x=d.x;p.z=d.z;p.ry=d.ry;p.m=d.m}
+ else if(d.t==='shoot')doShoot(id,d.ry);else if(d.t==='stab')doStab(id,d.ry)}
+function onClientData(d){if(!d)return;
+ if(d.t==='hello')me={id:d.id};
+ else if(d.t==='full')fail('The game is full or already started.');
+ else if(d.t==='lobby'){if(G.state!=='play'){G.state='lobby';show('lobby')}lobbyUI(d.n,d.map)}
+ else if(d.t==='start'){G.map=d.map;me={id:d.id,x:0,z:0,ry:0,m:0,a:1,role:d.role};const self=d.pl.find(q=>q[0]===d.id);me.x=self[1];me.z=self[2];
+  setupWorld(d.map,d.seed,d.n,d.sh,d.pl.map(q=>q[0]),d.id,d.role);beginPlay()}
+ else if(d.t==='s'){for(let i=0;i<V.c.length;i++){const o=i*5;setT(V.c[i],d.c[o],d.c[o+1],d.c[o+2],d.c[o+3],d.c[o+4])}
+  for(let i=0;i<d.p.length;i+=6){const id=d.p[i];if(id===me.id){if(!d.p[i+5])me.a=0;continue}const e=V.p[id];if(e)setT(e,d.p[i+1],d.p[i+2],d.p[i+3],d.p[i+4],d.p[i+5])}civLeft=d.n}
+ else if(d.t==='ev')onEvent(d.e);
+ else if(d.t==='over')showOver(d)}
+// ===================== HOST GAME LOGIC =====================
+function startGame(test){
+ if(!test&&(G.net!=='host'||players.size<2||G.state!=='lobby'))return;
+ const ids=test?(test==='sheriff'?[0,1]:[1,0]):[...players.keys()].sort(()=>Math.random()-.5);players.forEach(p=>{p.role='civilian';p.a=1;p.m=0});
+ players.get(ids[0]).role='sheriff';players.get(ids[1]).role='murderer';
+ const n=civCount(players.size),seed=Math.random()*1e9|0;me=players.get(0);
+ setupWorld(G.map,seed,n,ids[0],[...players.keys()],0,me.role);
+ C=[];for(let i=0;i<n;i++){const[x,z]=freePoint(.8),[tx,tz]=freePoint(.8);C.push({x,z,ry:Math.random()*6.28,m:0,a:1,tx,tz,wait:Math.random()*2,panic:0,sx:0,sz:0,stuck:0})}
+ players.forEach(p=>{[p.x,p.z]=freePoint(1)});
+ const pl=[...players.values()].map(q=>[q.id,q.x,q.z]);
+ players.forEach(p=>{if(p.conn)send(p.id,{t:'start',map:G.map,seed,n,sh:ids[0],pl,role:p.role,id:p.id})});
+ beginPlay();
+}
+function panicAt(x,z,r,skip){for(const c of C){if(c.a&&c!==skip&&Math.hypot(c.x-x,c.z-z)<r){c.panic=CONFIG.panicSeconds;c.sx=x;c.sz=z}}}
+function emit(e){bcast({t:'ev',e});onEvent(e)}
+function simCivs(dt){
+ for(const c of C){if(!c.a)continue;let dx,dz,sp;
+  if(c.panic>0){c.panic-=dt;dx=c.x-c.sx;dz=c.z-c.sz;const l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;sp=CONFIG.speeds.civPanic;c.m=2;if(c.panic<=0)c.wait=.6}
+  else if(c.wait>0){c.wait-=dt;c.m=0;continue}
+  else{dx=c.tx-c.x;dz=c.tz-c.z;const l=Math.hypot(dx,dz);if(l<1){c.wait=.5+Math.random()*3;[c.tx,c.tz]=freePoint(.8);c.m=0;continue}dx/=l;dz/=l;sp=CONFIG.speeds.civWalk;c.m=1}
+  const[rx,rz]=resolve(c.x+dx*sp*dt,c.z+dz*sp*dt,.45),mv=Math.hypot(rx-c.x,rz-c.z);c.x=rx;c.z=rz;c.ry=Math.atan2(dx,dz);
+  if(mv<sp*dt*.3){c.stuck+=dt;if(c.stuck>.5){c.stuck=0;if(c.panic>0){c.sx=c.x+(Math.random()-.5)*14;c.sz=c.z+(Math.random()-.5)*14}else[c.tx,c.tz]=freePoint(.8)}}else c.stuck=0}
+}
+function syncHost(){C.forEach((c,i)=>setT(V.c[i],c.x,c.z,c.ry,c.m,c.a));players.forEach(p=>{if(p.id!==0)setT(V.p[p.id],p.x,p.z,p.ry,p.m,p.a)});civLeft=C.filter(c=>c.a).length}
+const r2=v=>Math.round(v*100)/100;
+function snap(){const c=[];for(const q of C)c.push(r2(q.x),r2(q.z),r2(q.ry),q.m,q.a);const p=[];players.forEach(q=>p.push(q.id,r2(q.x),r2(q.z),r2(q.ry),q.m,q.a));return{t:'s',c,p,n:civLeft}}
+function targets(selfId){const t=[];C.forEach(c=>{if(c.a)t.push({c,civ:1,x:c.x,z:c.z})});players.forEach(p=>{if(p.a&&p.id!==selfId)t.push({p,x:p.x,z:p.z})});return t}
+function doShoot(id,ry){const p=players.get(id);if(!p||!p.a||p.role!=='sheriff'||G.state!=='play'||!isFinite(ry))return;
+ const dx=Math.sin(ry),dz=Math.cos(ry),mt=wallT(p.x,p.z,dx,dz,70);let best=null;
+ for(const t of targets(id)){const rx=t.x-p.x,rz=t.z-p.z,d=rx*dx+rz*dz;if(d<0||d>mt)continue;if(Math.abs(rx*dz-rz*dx)<.7&&(!best||d<best.d))best={d,t}}
+ emit({k:'shot',x:p.x,z:p.z,ry,len:best?best.d:mt});panicAt(p.x,p.z,CONFIG.shotPanicRadius);
+ if(!best)return;
+ if(best.t.civ){best.t.c.a=0;emit({k:'kill',msg:'The Sheriff shot an innocent civilian!'});over('murderer','The Sheriff shot an innocent civilian!')}
+ else{best.t.p.a=0;emit({k:'kill',p:best.t.p.id,msg:'A player was shot!'});if(best.t.p.role==='murderer')over('sheriff','The Sheriff took down the Murderer!');else over('murderer','The Sheriff shot an innocent player!')}}
+function doStab(id,ry){const p=players.get(id);if(!p||!p.a||p.role!=='murderer'||G.state!=='play'||!isFinite(ry))return;
+ const dx=Math.sin(ry),dz=Math.cos(ry);emit({k:'stab',id});let best=null;
+ for(const t of targets(id)){const rx=t.x-p.x,rz=t.z-p.z,d=Math.hypot(rx,rz);if(d>2.4)continue;if(d>.3&&(rx*dx+rz*dz)/d<.2)continue;if(wallT(p.x,p.z,rx/(d||1),rz/(d||1),d)<d-.2)continue;if(!best||d<best.d)best={d,t}}
+ if(!best)return;
+ if(best.t.civ){best.t.c.a=0;emit({k:'kill',msg:'Someone was murdered!'});panicAt(best.t.x,best.t.z,CONFIG.killPanicRadius);syncHost();if(civLeft<=0)over('murderer','The Murderer eliminated every civilian!')}
+ else{best.t.p.a=0;emit({k:'kill',p:best.t.p.id,msg:'A player was murdered!'});if(best.t.p.role==='sheriff')over('murderer','The Murderer killed the Sheriff!')}}
+function sandbox(role){G.net='host';G.test=role;G.state='lobby';players=new Map([[0,{id:0,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian'}],[1,{id:1,conn:null,x:0,z:0,ry:0,m:0,a:1,role:'civilian'}]]);startGame(role);toast('Sandbox: the other player is a motionless dummy')}
+function over(win,why){if(G.state!=='play')return;let m=-1;players.forEach(p=>{if(p.role==='murderer')m=p.id});const msg={t:'over',win,why,m,sh:sheriffId};bcast(msg);showOver(msg)}
+function showOver(d){G.state='over';document.exitPointerLock&&document.exitPointerLock();
+ const myWin=(d.win==='murderer')===(me.role==='murderer');$('oT').textContent=d.win==='murderer'?'🔪 Murderer Wins':'⭐ Sheriff Wins';$('oW').textContent=d.why;
+ $('oR').innerHTML='You were '+(me.role==='murderer'?'the <b class="murderer">Murderer</b>':me.role==='sheriff'?'the <b class="sheriff">Sheriff</b>':'a <b class="civilian">Civilian</b>')+' — <b>'+(myWin?'You win!':'You lose.')+'</b><br>Murderer: Player '+(d.m+1);
+ show('over')}
+// ===================== PLAY =====================
+function beginPlay(){G.state='play';cd=1;yaw=0;pitch=0;cam.fov=75;cam.updateProjectionMatrix();buildVM(me.role);show(null);$('hud').style.display='block';
+ const r=me.role;$('role').textContent={sheriff:'⭐ SHERIFF',murderer:'🔪 MURDERER',civilian:'🙂 CIVILIAN'}[r];$('role').className='role '+r;
+ $('obj').textContent={sheriff:'Find and shoot the Murderer. Shooting an innocent ends the game!',murderer:'Blend in. Stab every civilian or the Sheriff.',civilian:'Stay alive and stay out of trouble.'}[r];
+ $('lock').style.display='block'}
+function moveMe(dt){cd-=dt;if(!me.a){me.m=0;return}me.ry=yaw;
+ let f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0);if(!locked||G.state!=='play')f=s=0;
+ if(f||s){const fx=Math.sin(yaw),fz=Math.cos(yaw);let dx=fx*f-Math.cos(yaw)*s,dz=fz*f+Math.sin(yaw)*s;const l=Math.hypot(dx,dz);dx/=l;dz/=l;
+  const run=keys.ShiftLeft||keys.ShiftRight,sp=run?CONFIG.speeds.run:CONFIG.speeds.walk;[me.x,me.z]=resolve(me.x+dx*sp*dt,me.z+dz*sp*dt,.45);me.m=run?2:1}else me.m=0}
+function attack(){if(!locked||G.state!=='play'||!me.a||cd>0)return;
+ vmK=1;if(me.role==='sheriff'){cd=CONFIG.shootCooldown;me.ry=yaw;G.net==='host'?doShoot(0,yaw):conn.send({t:'shoot',ry:yaw})}
+ else if(me.role==='murderer'){cd=CONFIG.stabCooldown;me.ry=yaw;G.net==='host'?doStab(0,yaw):conn.send({t:'stab',ry:yaw})}}
+function buildVM(role){
+ if(VM)cam.remove(VM);VM=new THREE.Group();cam.add(VM);const v=CONFIG.viewmodel;
+ if(role==='sheriff'){const bl=PR.blaster?PR.blaster.scene.clone(true):new THREE.Mesh(new THREE.BoxGeometry(.1,.12,.4),mat(0x222222));const w=new THREE.Group();w.add(bl);bl.scale.setScalar(PR.blaster?v.scale:1);w.rotation.y=PR.blaster?v.yaw:0;w.position.set(v.pos[0],v.pos[1],v.pos[2]);VM.add(w)}
+ else if(role==='murderer'){const w=new THREE.Group(),bd=new THREE.Mesh(new THREE.BoxGeometry(.03,.05,.4),mat(0xe0e0e0,{emissive:0x331111})),hn=new THREE.Mesh(new THREE.BoxGeometry(.04,.06,.13),mat(0x2a1a10));bd.position.z=-.26;hn.position.z=-.02;w.add(bd,hn);w.position.set(.3,-.28,-.4);w.rotation.x=.25;VM.add(w)}
+ VM.traverse(o=>{if(o.isMesh){o.frustumCulled=false;o.castShadow=false}})}
+function updateCam(dt){
+ const alive=me.a,run=me.m===2,lv=V.p[me.id];if(lv)lv.g.visible=!alive;
+ if(alive){bob+=dt*(me.m?(run?11:7.5):0);cam.position.set(me.x,1.62+(me.m?Math.sin(bob)*.045*(run?1.4:1):0),me.z);cam.rotation.set(pitch,yaw+Math.PI,0)}
+ else{const fx=Math.sin(yaw),fz=Math.cos(yaw);cam.position.set(me.x-fx*3,2.4,me.z-fz*3);cam.lookAt(me.x,.4,me.z)}
+ const tf=run&&alive?83:75;if(Math.abs(cam.fov-tf)>.05){cam.fov+=(tf-cam.fov)*Math.min(1,dt*8);cam.updateProjectionMatrix()}
+ if(SKY)SKY.position.copy(cam.position);sun.position.set(me.x+35,70,me.z+25);sun.target.position.set(me.x,0,me.z);sun.target.updateMatrixWorld();
+ if(VM){VM.visible=!!alive&&G.state==='play';vmK=Math.max(0,vmK-dt*5);const kk=vmK*vmK;
+  if(me.role==='murderer'){VM.position.set(-kk*.22,Math.sin(bob*.5)*.008,-kk*.38);VM.rotation.z=kk*.9}
+  else{VM.position.set(0,Math.sin(bob*.5)*.008,kk*.1);VM.rotation.x=kk*.18}}}
+function hud(dt){$('civs').textContent=civLeft;$('conn').textContent=G.test?'🧪 Test mode (offline)':G.net==='host'?'● Hosting · '+players.size+' player(s)':'● Connected to host';
+ if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').textContent=''}$('lock').style.display=(!locked&&G.state==='play')?'block':'none';
+ if(me&&!me.a&&G.state==='play')$('role').textContent='💀 YOU ARE DEAD'}
+// ===================== TEST: MODEL VIEWER =====================
+let VI=[],vsel=0,vtx=0,vd=7,vyaw=.6,vpitch=.35,vAnim=1;
+function focusItem(i){vsel=(i+VI.length)%VI.length;const it=VI[vsel];vtx=it.x;vd=Math.max(4,it.size*1.8)}
+function setAnim(m){vAnim=m;VI.forEach(it=>{if(it.e)it.e.m=m})}
+function openViewer(){
+ G.state='view';show(null);$('hud').style.display='none';$('viewer').style.display='block';worldG.clear();entG.clear();VI=[];
+ scene.background=new THREE.Color(0x20232e);scene.fog=null;hemi.intensity=1;sun.intensity=.9;sun.castShadow=false;SKY=null;if(VM)VM.visible=false;
+ const fl=new THREE.Mesh(new THREE.PlaneGeometry(400,80),mat(0x333844));fl.rotation.x=-Math.PI/2;worldG.add(fl);const gr=new THREE.GridHelper(400,200,0x555b70,0x444a5c);gr.scale.z=.2;worldG.add(gr);
+ let x=0;
+ for(const k of['sheriff','civilian','murderer']){const e=mkChar(k);setT(e,x,0,0,vAnim,1);e.x=x;VI.push({n:k+' (character)',x,size:2.2,ok:!!CH[k],e});x+=2.6}
+ x+=1;
+ for(const k of['blaster',...Object.keys(CONFIG.models.props)]){const p=PR[k];
+  if(p){const m=p.scene.clone(true);if(k==='blaster')m.scale.multiplyScalar(4);const b=new THREE.Box3().setFromObject(m),w=b.max.x-b.min.x,sz=Math.max(w,b.max.y-b.min.y,b.max.z-b.min.z);x+=w/2+.5;m.position.x+=x;worldG.add(m);VI.push({n:k+(k==='blaster'?' (shown 4x)':''),x,size:sz,ok:true});x+=w/2+.5}
+  else{const m=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),mat(0xaa3333));m.position.set(x+1,.5,0);worldG.add(m);VI.push({n:k+' (MISSING)',x:x+1,size:2,ok:false});x+=3}}
+ $('vl').innerHTML='';VI.forEach((it,i)=>{const b=document.createElement('button');b.className=it.ok?'alt':'bad';b.textContent=(it.ok?'✔ ':'✖ ')+it.n;b.onclick=()=>focusItem(i);$('vl').appendChild(b)});
+ const okN=VI.filter(i=>i.ok).length;$('vinfo').textContent=okN+'/'+VI.length+' models loaded. '+(okN<VI.length?'Red = file missing in /assets or page opened from disk (use a web server or GitHub Pages).':'');
+ const sw=CH.sheriff;$('vinfo').textContent+=' Animations: '+(sw?Object.keys(VI[0].e.acts).join(', ')||'none':'n/a');
+ focusItem(0)}
+function closeViewer(){$('viewer').style.display='none';entG.clear();worldG.clear();G.state='menu';show('menu')}
+addEventListener('keydown',e=>{if(G.state!=='view')return;if(e.code==='ArrowRight')focusItem(vsel+1);if(e.code==='ArrowLeft')focusItem(vsel-1);if(e.code==='Digit1')setAnim(0);if(e.code==='Digit2')setAnim(1);if(e.code==='Digit3')setAnim(2)});
+let last=performance.now(),acc=0;
+function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;
+ if(G.state==='view'){if(cam.fov!==55){cam.fov=55;cam.updateProjectionMatrix()}VI.forEach(it=>it.e&&updEnt(it.e,dt,false));cam.position.set(vtx+Math.sin(vyaw)*Math.cos(vpitch)*vd,1+Math.sin(vpitch)*vd,Math.cos(vyaw)*Math.cos(vpitch)*vd);cam.lookAt(vtx,1,0)}
+
+ if(G.state==='play'||G.state==='over'){
+  if(G.state==='play'){moveMe(dt);acc+=dt;
+   if(G.net==='host'){simCivs(dt);syncHost();if(acc>=1/30){acc=0;bcast(snap())}}
+   else if(acc>=1/30&&conn&&conn.open){acc=0;conn.send({t:'in',x:me.x,z:me.z,ry:me.ry,m:me.m})}}
+  V.c.forEach(e=>updEnt(e,dt,false));for(const id in V.p)updEnt(V.p[id],dt,!!V.p[id].local);
+  fxs=fxs.filter(f=>{f.t-=dt;if(f.t<=0){scene.remove(f.o);return false}return true});updateCam(dt);hud(dt)}
+ renderer.render(scene,cam)}
+// ===================== INPUT / UI =====================
+addEventListener('keydown',e=>{keys[e.code]=true});addEventListener('keyup',e=>{keys[e.code]=false});
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===$('c')});
+addEventListener('wheel',e=>{if(G.state==='view')vd=Math.max(1.5,Math.min(60,vd*(1+e.deltaY*.001)))});
+addEventListener('mousemove',e=>{if(G.state==='view'&&e.buttons&1){vyaw-=e.movementX*.01;vpitch=Math.max(-.1,Math.min(1.4,vpitch+e.movementY*.01))}if(!locked)return;yaw-=e.movementX*.0025;pitch=Math.max(-1.4,Math.min(1.4,pitch-e.movementY*.002))});
+$('c').addEventListener('mousedown',()=>{if(G.state!=='play')return;if(!locked){$('c').requestPointerLock&&$('c').requestPointerLock();return}attack()});
+$('bHost').onclick=hostGame;$('bJoin').onclick=()=>joinGame($('code').value);
+$('bStart').onclick=()=>startGame();$('bView').onclick=openViewer;$('bSbS').onclick=()=>sandbox('sheriff');$('bSbM').onclick=()=>sandbox('murderer');
+$('bCopy').onclick=()=>{const l=$('link');l.select();(navigator.clipboard?navigator.clipboard.writeText(l.value):Promise.reject()).catch(()=>document.execCommand('copy'));$('bCopy').textContent='Copied!';setTimeout(()=>$('bCopy').textContent='Copy Invite Link',1500)};
+$('bAgain').onclick=()=>{if(G.test){entG.clear();sandbox(G.test)}else if(G.net==='host'){G.state='lobby';entG.clear();show('lobby');lobbyBcast();$('lobStat').textContent='Ready for another round.'}else{G.state='lobby';entG.clear();show('lobby');$('lobStat').textContent='Waiting for the host to start the next round…'}};
+for(const k in MAPS){const o=document.createElement('option');o.value=k;o.textContent=MAPS[k].name;$('mapSel').appendChild(o)}
+$('mapSel').onchange=()=>{G.map=$('mapSel').value;lobbyBcast()};
+// ===================== BOOT =====================
+async function loadAll(){
+ FAIL.length=0;for(const k in cache)delete cache[k];for(const k in CH)delete CH[k];for(const k in PR)delete PR[k];
+ const nm=[...['sheriff','murderer','civilian'].map(k=>CONFIG.models[k]),CONFIG.models.blaster,...Object.values(CONFIG.models.props)].filter(Boolean).map(bkey);
+ const getScript=u=>new Promise(r=>{const sc=document.createElement('script');sc.src=u;sc.onload=()=>r(true);sc.onerror=()=>r(false);document.head.appendChild(sc)});
+ await Promise.all([...new Set(nm)].map(async n=>{if(LOCAL[n]||(window.MODELS&&MODELS[n]))return;await getScript(BASE+'assets/'+n+'.js');if(window.MODELS&&MODELS[n])return;
+  const t=await tree();if(t&&t.files){const p=t.files.find(f=>/\.js$/i.test(f)&&bkey(f)===n);if(p){const{u,r}=t.ri;for(const br of(t.br&&t.br!=='HEAD'?[t.br]:['main','master'])){if(await getScript('https://cdn.jsdelivr.net/gh/'+u+'/'+r+'@'+br+'/'+p)&&window.MODELS&&MODELS[n])break}}}}));
+ try{await Promise.all([...['sheriff','murderer','civilian'].map(k=>loadM(CONFIG.models[k]).then(g=>CH[k]=g)),loadM(CONFIG.models.blaster,1).then(g=>PR.blaster=g),...Object.keys(CONFIG.models.props).map(k=>loadM(CONFIG.models.props[k],1).then(g=>PR[k]=g))])}catch(e){}
+ const got=Object.values(CH).filter(Boolean).length+Object.values(PR).filter(Boolean).length,tot=Object.keys(CH).length+Object.keys(PR).length;
+ $('load').textContent=got===tot?'Models loaded ✔ ('+got+'/'+tot+')':got?'Loaded '+got+'/'+tot+' models — missing ones use placeholders.':'No models found — click "Load models from your computer" below.';
+ let tm='';if(FAIL.length&&TREE){const t=await TREE;if(t&&t.ri)tm=t.files===null?'Could not read GitHub repo '+t.ri.u+'/'+t.ri.r+' (private, wrong name, or API rate limit). Add ?repo=USER/REPO to the page URL to override.\n':t.files.length===0?'Repo '+t.ri.u+'/'+t.ri.r+' contains NO .glb files - the assets were not uploaded (upload the assets folder, or add files via git).\n':'Repo '+t.ri.u+'/'+t.ri.r+' has these .glb files: '+t.files.join(', ')+'\n'}
+ $('diag').textContent=FAIL.length?'Details:\n'+tm+FAIL.slice(0,5).join('\n'):'';if(location.protocol==='file:'&&!got)$('load').textContent+=' (Opened from disk: browsers block file loading, so pick the .glb files manually.)'}
+const idb=()=>new Promise((ok,no)=>{const q=indexedDB.open('hsmm',1);q.onupgradeneeded=()=>q.result.createObjectStore('m');q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)});
+async function saveLocal(k,b){try{const d=await idb();d.transaction('m','readwrite').objectStore('m').put(b,k)}catch(e){}}
+async function restoreLocal(){try{const d=await idb();await new Promise(res=>{const q=d.transaction('m').objectStore('m').openCursor();q.onsuccess=()=>{const c=q.result;if(c){LOCAL[c.key]=c.value;c.continue()}else res()};q.onerror=()=>res()})}catch(e){}}
+async function clearSaved(){try{const d=await idb();d.transaction('m','readwrite').objectStore('m').clear()}catch(e){}for(const k in LOCAL)delete LOCAL[k];await loadAll()}
+async function pickFiles(files){
+ $('load').textContent='Reading files…';
+ for(const f of files){if(/\.glb$/i.test(f.name)){const b=await f.arrayBuffer();LOCAL[bkey(f.name)]=b;saveLocal(bkey(f.name),b)}}
+ await loadAll();if(G.state==='view')openViewer()}
+$('bClr').onclick=clearSaved;$('bPick').onclick=()=>$('fpick').click();$('bPick2').onclick=()=>$('fpick').click();$('fpick').onchange=e=>pickFiles([...e.target.files]);
+(async()=>{
+ if(!window.Peer||!window.THREE||!THREE.GLTFLoader){$('menuErr').textContent='Failed to load libraries (check your internet connection).'}
+ await restoreLocal();await loadAll();
+ $('bHost').disabled=$('bJoin').disabled=!window.Peer;$('bView').disabled=$('bSbS').disabled=$('bSbM').disabled=false;
+ const room=new URLSearchParams(location.search).get('room');if(room&&window.Peer){$('code').value=room;joinGame(room)}
+ requestAnimationFrame(loop)})();
+</script></body></html>
